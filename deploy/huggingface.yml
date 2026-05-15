@@ -1,0 +1,34 @@
+sdk: docker
+app_port: 7860
+
+build:
+  dockerfile: Dockerfile.stream
+  context: ..
+
+env:
+  - name: API_ID
+    value: ""
+  - name: API_HASH
+    value: ""
+  - name: BOT_TOKEN
+    value: ""
+  - name: LOG_CHANNEL
+    value: ""
+  - name: PORT
+    value: "8080"
+  - name: HASH_LENGTH
+    value: "6"
+  - name: DEV
+    value: "false"
+  - name: STREAM_CONCURRENCY
+    value: "6"
+  - name: STREAM_BUFFER_COUNT
+    value: "12"
+  - name: STREAM_TIMEOUT_SEC
+    value: "30"
+  - name: STREAM_MAX_RETRIES
+    value: "3"
+  - name: USE_SESSION_FILE
+    value: "true"
+  - name: USE_PUBLIC_IP
+    value: "false"

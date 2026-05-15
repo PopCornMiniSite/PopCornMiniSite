@@ -1,0 +1,106 @@
+services:
+  stream-bot:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.stream
+    container_name: popcorn-stream-bot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../stream-bot/fsb.env
+    volumes:
+      - stream_sessions:/sessions
+    networks:
+      - popcorn-net
+
+  archive-bot:
+    build:
+      context: ..
+      dockerfile: archive-bot/Dockerfile
+    container_name: popcorn-archive-bot
+    restart: unless-stopped
+    env_file:
+      - ../archive-bot/.env
+    volumes:
+      - archive_data:/app/data
+      - ../archive-bot/sessions:/app/sessions
+    networks:
+      - popcorn-net
+    depends_on:
+      - stream-bot
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: popcorn-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - DOMAIN=localhost
+      - SUPABASE_URL=rlfohdeujwvamiosfmoc.supabase.co
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template:ro
+      - ../dist:/usr/share/nginx/html:ro
+    networks:
+      - popcorn-net
+    depends_on:
+      - stream-bot
+
+  tinode:
+    image: tinode/tinode:latest
+    container_name: popcorn-tinode
+    restart: unless-stopped
+    ports:
+      - "6060:6060"
+    env_file:
+      - ./tinode.env
+    networks:
+      - popcorn-net
+
+  ott-redis:
+    image: redis:7-alpine
+    container_name: popcorn-ott-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    expose:
+      - 6379
+    volumes:
+      - ott-redis-data:/data
+    networks:
+      - popcorn-net
+
+  ott-server:
+    image: dyc3/opentogethertube:latest
+    container_name: popcorn-ott-server
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - ott-redis
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - OTT_HOSTNAME=localhost:8081
+      - REDIS_HOST=ott-redis
+      - REDIS_PORT=6379
+      - DOCKER=1
+      - HEROKU=true
+      - DATABASE_URL=postgresql://postgres:youzerseef92004@db.rlfohdeujwvamiosfmoc.supabase.co:5432/postgres
+      - FFPROBE_PATH=/usr/bin/ffprobe
+      - SESSION_SECRET=f2sCLmr606MBb6d6CbsDOnJXaNRvk3XNGJ5ZHzrtfwze9MeKqPlUtCsp1DwCguL8DcAj53M0NmdQZLbzkIpW4tGBJ53nnP4GyoPsHds
+      - OPENTOGETHERTUBE_API_KEY=nehbLE486gG4gSQp2kuxpPKASoN7mK2tBuChtdBUMsdmT4jHe9GBgnayfzj6P
+    volumes:
+      - ../opentogethertube/env:/app/env
+    networks:
+      - popcorn-net
+
+networks:
+  popcorn-net:
+    driver: bridge
+
+volumes:
+  stream_sessions:
+  archive_data:
+  ott-redis-data:

@@ -1,0 +1,24 @@
+from typing import Optional
+"""Parse options for controlling extended parsing behavior."""
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class ParseOptions:
+    """Options that control extended parsing behavior (media download, etc.)."""
+
+    # Media download
+    download_media: bool = False
+    max_media_size_mb: int = 50
+    media_output_dir: Optional[Path] = None
+
+    # Reply threads
+    fetch_replies: bool = False
+
+    # Sender enrichment
+    enrich_senders: bool = False
+
+    # Text-only mode — skip media, reactions, forwards, entities
+    text_only: bool = False

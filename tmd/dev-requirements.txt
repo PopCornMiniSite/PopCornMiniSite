@@ -1,0 +1,9 @@
+black==25.11.0
+isort==6.1.0
+mock==5.2.0
+mypy==1.19.1
+pre-commit==4.3.0
+pylint==3.3.9
+pytest==8.4.2
+pytest-cov==7.0.0
+types-PyYAML>=6.0.12

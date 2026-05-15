@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# Telegram sessions
+sessions/*.session
+sessions/*.session-journal
+
+# Output data
+output/*
+!output/.gitkeep
+
+# Parse state
+sessions/parse_state.json
+
+# OS
+Thumbs.db
+.DS_Store

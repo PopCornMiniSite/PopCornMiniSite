@@ -1,0 +1,63 @@
+{
+  "name": "popcorn-mini",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/functions-js": "^2.1.0",
+    "@supabase/postgrest-js": "^1.1.0",
+    "@supabase/realtime-js": "^2.8.0",
+    "@supabase/storage-js": "^2.5.0",
+    "@supabase/supabase-js": "^2.15.0",
+    "@testing-library/jest-dom": "^5.11.6",
+    "@testing-library/react": "^11.1.2",
+    "@testing-library/user-event": "^12.2.2",
+    "@tma.js/sdk": "^3.2.0",
+    "autoprefixer": "^10.5.0",
+    "axios": "^0.21.1",
+    "firebase": "^8.0.2",
+    "fuse.js": "^6.4.3",
+    "hls.js": "^1.6.16",
+    "i18next": "^26.1.0",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "movie-trailer": "^2.0.7",
+    "normalize.css": "^8.0.1",
+    "postcss": "^8.5.14",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-i18next": "^17.0.7",
+    "react-router-dom": "^6.30.3",
+    "react-scripts": "4.0.0",
+    "react-youtube": "^7.13.1",
+    "styled-components": "^5.2.1",
+    "tailwindcss": "^3.4.19",
+    "web-vitals": "^0.2.4",
+    "zustand": "^4.5.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "react-app-rewired": "^2.2.1"
+  }
+}

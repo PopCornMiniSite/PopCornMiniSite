@@ -1,0 +1,12 @@
+export { default as Home } from './Home';
+export { default as Browse } from './Browse';
+export { default as Signin } from './signin';
+export { default as Signup } from './signup';
+export { default as MovieDetail } from './MovieDetail';
+export { default as TvDetail } from './TvDetail';
+export { default as Watch } from './Watch';
+export { default as Chat } from './Chat';
+export { default as WatchParty } from './WatchParty';
+export { default as Favorites } from './Favorites';
+export { default as Search } from './Search';
+export { default as Profile } from './Profile';

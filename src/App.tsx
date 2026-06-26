@@ -1,13 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Suspense } from 'react'
-import { TelegramProvider } from '@/providers/TelegramProvider'
+import { Suspense, useEffect } from 'react'
+import { TelegramProvider, useTelegram } from '@/providers/TelegramProvider'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { I18nProvider } from '@/providers/I18nProvider'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { SuspenseWrapper } from '@/components/layout/SuspenseWrapper'
 import { lazyLoad } from '@/lib/lazyLoad'
-import { CinematicAtmosphere } from '@/components/CinematicAtmosphere'
+import { useInitAuth } from '@/lib/api'
 import { Toaster } from 'sonner'
 import './i18n/i18n'
 
@@ -50,6 +50,19 @@ const queryClient = new QueryClient({
   },
 })
 
+function AuthInit() {
+  const { initDataRaw } = useTelegram()
+  const auth = useInitAuth()
+
+  useEffect(() => {
+    if (initDataRaw && !auth.isSuccess && !auth.isPending) {
+      auth.mutate(initDataRaw)
+    }
+  }, [initDataRaw, auth])
+
+  return null
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -57,7 +70,7 @@ export default function App() {
         <ThemeProvider>
           <I18nProvider>
             <BrowserRouter basename="/PopCornMiniSite">
-              <CinematicAtmosphere />
+              <AuthInit />
               <Routes>
                 <Route path="/" element={<PageContainer />}>
                   <Route

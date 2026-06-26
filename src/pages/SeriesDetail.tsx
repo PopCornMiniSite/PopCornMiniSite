@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { useSeries, useSimilarMovies, useCreateParty } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
-import { useAtmosphereStore } from '@/stores/atmosphereStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
 import { MovieCard } from '@/components/MovieCard'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -40,7 +39,6 @@ export default function SeriesDetail() {
   const navigate = useNavigate()
   const { t } = useTranslation('series')
   const setPageTitle = useUiStore((s) => s.setPageTitle)
-  const setAtmosphere = useAtmosphereStore((s) => s.setAtmosphere)
   const { pageTransition: pageVariants } = useDirectionalAnimation()
 
   const seriesId = Number(id)
@@ -50,10 +48,9 @@ export default function SeriesDetail() {
   useEffect(() => {
     if (series) {
       setPageTitle(series.name)
-      setAtmosphere(series.poster_url, series.backdrop_url)
     }
     return () => { setPageTitle('') }
-  }, [series, setPageTitle, setAtmosphere])
+  }, [series, setPageTitle])
 
   if (isLoading) {
     return (

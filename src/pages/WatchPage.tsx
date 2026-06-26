@@ -183,14 +183,14 @@ export default function WatchPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 bg-bg-primary" data-testid="watch-error">
         <p className="text-lg font-medium text-text-primary">
-          {t('settings', 'Unable to load stream')}
+          {t('player', 'Unable to load stream')}
         </p>
         <button
           onClick={handleBack}
           className="px-6 py-2 rounded-lg text-sm font-medium cursor-pointer bg-brand-primary text-white hover:bg-brand-primary-hover shadow-[0_4px_16px_rgba(255,107,53,0.3)] transition-all duration-200"
           data-testid="watch-back-btn"
         >
-          {t('settings', 'Go Back')}
+          {t('player', 'Go Back')}
         </button>
       </div>
     )
@@ -217,7 +217,7 @@ export default function WatchPage() {
           <button
             onClick={handleBack}
             className="w-10 h-10 rounded-full glass flex items-center justify-center text-white hover:text-brand-primary hover:bg-brand-primary/10 transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-primary"
-            aria-label={t('settings', 'Back')}
+            aria-label={t('player', 'Back')}
             data-testid="watch-header-back"
           >
             <ChevronLeft className="w-5 h-5" />

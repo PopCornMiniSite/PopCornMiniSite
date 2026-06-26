@@ -3,7 +3,7 @@ import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { useWatchHistory } from '@/lib/api'
 import { Header } from '@/components/layout/Header'
-import { Film, Tv, Play, DownloadCloud } from 'lucide-react'
+import { Clock, Film, Tv, Play } from 'lucide-react'
 
 export default function Downloads() {
   const { t } = useTranslation('common')
@@ -23,9 +23,9 @@ export default function Downloads() {
         transition={{ duration: 0.3 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <DownloadCloud className="w-5 h-5 text-brand-primary" />
+          <Clock className="w-5 h-5 text-brand-primary" />
           <h1 className="text-xl font-bold font-display text-text-primary tracking-tight">
-            {t('downloads')}
+            {t('watch_history')}
           </h1>
         </div>
 
@@ -38,9 +38,9 @@ export default function Downloads() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-12 text-center">
             <div className="h-16 w-16 rounded-2xl bg-bg-tertiary border border-border-subtle flex items-center justify-center mb-4">
-              <DownloadCloud className="w-8 h-8 text-text-tertiary" />
+              <Clock className="w-8 h-8 text-text-tertiary" />
             </div>
-            <p className="text-sm text-text-tertiary">{t('no_downloads')}</p>
+            <p className="text-sm text-text-tertiary">{t('no_history')}</p>
           </div>
         ) : (
           <div className="space-y-2">

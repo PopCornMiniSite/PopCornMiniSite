@@ -85,6 +85,49 @@ export async function fetchManifest(videoId: string): Promise<ManifestData | nul
   }
 }
 
+export interface ArchivedMovie {
+  random_name: string
+  tmdb_id: number
+  media_type: string
+  title: string
+  original_filename: string
+  uploaded_at: string
+}
+
+export async function fetchArchivedMovies(): Promise<ArchivedMovie[]> {
+  const rows = await tursoQuery<{
+    random_name: string
+    tmdb_id: number
+    media_type: string
+    manifest_data: string | null
+    original_filename: string
+    uploaded_at: string
+  }>(
+    `SELECT random_name, tmdb_id, media_type, manifest_data, original_filename, uploaded_at
+     FROM archives
+     WHERE status = 'active'
+     ORDER BY uploaded_at DESC`,
+  )
+  if (!rows) return []
+  return rows.map((row) => {
+    let title = row.original_filename ?? ''
+    try {
+      if (row.manifest_data) {
+        const m = JSON.parse(row.manifest_data) as { title?: string }
+        if (m.title) title = m.title
+      }
+    } catch {}
+    return {
+      random_name: row.random_name,
+      tmdb_id: row.tmdb_id,
+      media_type: row.media_type,
+      title,
+      original_filename: row.original_filename ?? '',
+      uploaded_at: row.uploaded_at ?? '',
+    }
+  })
+}
+
 export async function findVideoId(
   tmdbId: number,
   type: 'movie' | 'episode',

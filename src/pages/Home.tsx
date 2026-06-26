@@ -1,131 +1,98 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'motion/react'
 import { Header } from '@/components/layout/Header'
-import { HeroBanner } from '@/components/HeroBanner'
-import { MovieCard } from '@/components/MovieCard'
-import { useMovies } from '@/lib/api'
-import { useUiStore } from '@/stores/uiStore'
-import { useAtmosphereStore } from '@/stores/atmosphereStore'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
-import type { Movie } from '@/types/movie'
-
-function MovieSection({ title, movies, isLoading, sectionIndex = 0 }: { title: string; movies: Movie[]; isLoading: boolean; sectionIndex?: number }) {
-  const { t } = useTranslation('home')
-  const navigate = useNavigate()
-
-  return (
-    <section className="mt-10 relative z-[1]">
-      <div
-        className="absolute -top-16 left-0 right-0 h-32 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 60% 100% at ${sectionIndex % 2 === 0 ? '30%' : '70%'} 100%, rgba(255,107,53,0.03) 0%, transparent 70%)`,
-          filter: 'blur(30px)',
-        }}
-      />
-      <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-lg font-bold font-display text-text-primary tracking-tight">
-          {title}
-        </h2>
-        <button onClick={() => navigate('/discover')} className="flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary-hover transition-colors cursor-pointer">
-          {t('see_all', { defaultValue: 'See All' })}
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-      <div
-        className="relative flex gap-3 overflow-x-auto px-4 pb-3"
-        style={{
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-          maskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 94%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 4%, black 94%, transparent 100%)',
-        }}
-      >
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => <MovieCard key={i} movie={null!} isLoading />)
-          : movies.map((movie) => (
-              <MovieCard key={movie.tmdb_id} movie={movie} />
-            ))}
-      </div>
-    </section>
-  )
-}
+import { fetchArchivedMovies, type ArchivedMovie } from '@/lib/turso'
+import { useUiStore } from '@/stores/uiStore'
 
 export default function Home() {
   const { t } = useTranslation('home')
   const setPageTitle = useUiStore((s) => s.setPageTitle)
-  const setAtmosphere = useAtmosphereStore((s) => s.setAtmosphere)
-
-  const { data: trendingData, isLoading: trendingLoading } = useMovies({ sort_by: 'popularity', per_page: 10 })
-  const { data: latestData, isLoading: latestLoading } = useMovies({ sort_by: 'release_date', per_page: 10 })
-  const { data: featuredData, isLoading: featuredLoading } = useMovies({ sort_by: 'vote_average', per_page: 10 })
+  const navigate = useNavigate()
+  const [archived, setArchived] = useState<ArchivedMovie[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setPageTitle(t('welcome'))
   }, [setPageTitle, t])
 
-  const trendingMovies = trendingData?.items ?? []
-  const latestMovies = latestData?.items ?? []
-  const featuredMovies = featuredData?.items ?? []
-
-  const heroMovies = trendingMovies.slice(0, 5)
-
-  const [heroIndex, setHeroIndex] = useState(0)
-
-  const clampedIndex = heroIndex < heroMovies.length ? heroIndex : 0
-  const currentMovie = heroMovies[clampedIndex]
-
-  /* Sync current hero movie to the shared cinematic atmosphere */
   useEffect(() => {
-    if (currentMovie) {
-      setAtmosphere(currentMovie.poster_url, currentMovie.backdrop_url)
-    }
-  }, [currentMovie, setAtmosphere])
-
-  const handleNext = useCallback(() => {
-    if (heroMovies.length === 0) return
-    setHeroIndex((prev) => (prev + 1) % heroMovies.length)
-  }, [heroMovies.length])
-
-  const handlePrev = useCallback(() => {
-    if (heroMovies.length === 0) return
-    setHeroIndex((prev) => (prev - 1 + heroMovies.length) % heroMovies.length)
-  }, [heroMovies.length])
-
-  const handleGoTo = useCallback((index: number) => {
-    setHeroIndex(index)
+    fetchArchivedMovies()
+      .then((rows) => {
+        setArchived(rows)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
+  const [seconds, setSeconds] = useState(0)
   useEffect(() => {
-    if (clampedIndex !== heroIndex) {
-      setHeroIndex(clampedIndex)
-    }
-  }, [clampedIndex, heroIndex])
+    const interval = setInterval(() => setSeconds((s) => s + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="relative" data-testid="home-page">
+        <Header />
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="animate-spin w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (archived.length === 0) {
+    const dots = '.'.repeat((seconds % 3) + 1)
+    return (
+      <div className="relative" data-testid="home-page">
+        <Header />
+        <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
+          <div className="text-6xl mb-4 opacity-30">🎬</div>
+          <h2 className="text-xl font-bold font-display text-text-primary mb-2">
+            {t('no_content_title', { defaultValue: 'No Content Yet' })}
+          </h2>
+          <p className="text-sm text-text-secondary max-w-xs leading-relaxed">
+            {t('no_content_desc', {
+              defaultValue: 'Archive a video using the bot to see it here.',
+            })}
+          </p>
+          <div className="mt-8 text-xs text-text-tertiary font-mono tracking-widest">
+            {t('waiting', { defaultValue: 'Waiting for archives' })}{dots}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative" data-testid="home-page">
       <Header />
-
-      <motion.div
-        className="relative z-[1]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.42, 0, 0.18, 1] }}
-      >
-        <div className="px-4 pt-3">
-          <HeroBanner
-            movies={heroMovies}
-            currentIndex={clampedIndex}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            onGoTo={handleGoTo}
-          />
-        </div>
-        <MovieSection title={t('trending')} movies={trendingMovies} isLoading={trendingLoading} sectionIndex={0} />
-        <MovieSection title={t('latest')} movies={latestMovies} isLoading={latestLoading} sectionIndex={1} />
-        <MovieSection title={t('recommended')} movies={featuredMovies} isLoading={featuredLoading} sectionIndex={2} />
-      </motion.div>
+      <div className="relative z-[1] px-4 pt-3">
+        <section className="mt-2">
+          <h2 className="text-lg font-bold font-display text-text-primary tracking-tight mb-3">
+            {t('archived', { defaultValue: 'Archived' })}
+          </h2>
+          <div
+            className="flex flex-col gap-3"
+          >
+            {archived.map((item) => (
+              <button
+                key={item.random_name}
+                onClick={() => navigate(`/watch/movie/${item.tmdb_id}`)}
+                className="w-full text-left bg-[var(--tg-section-bg-color)] rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+              >
+                <div className="text-text-primary font-medium truncate">
+                  {item.title || item.original_filename}
+                </div>
+                <div className="text-xs text-text-secondary mt-1">
+                  {new Date(item.uploaded_at).toLocaleDateString()}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

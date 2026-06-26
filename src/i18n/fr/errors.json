@@ -1,0 +1,7 @@
+{
+  "network": "Erreur réseau",
+  "server": "Erreur serveur",
+  "unauthorized": "Non autorisé",
+  "not_found": "Page non trouvée",
+  "rate_limit": "Limite de taux dépassée, réessayez plus tard"
+}

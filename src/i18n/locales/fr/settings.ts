@@ -1,0 +1,15 @@
+export default {
+  title: 'Paramètres',
+  language: 'Langue',
+  notifications: 'Notifications',
+  push_notifications: 'Notifications push',
+  party_notifications: 'Notifications de party',
+  privacy: 'Confidentialité',
+  show_online: 'Afficher le statut en ligne',
+  show_watch_party: 'Afficher l\'activité soirée film',
+  logout: 'Déconnexion',
+  theme: 'Thème',
+  dark_mode: 'Mode sombre',
+  light_mode: 'Mode clair',
+  system: 'Système',
+} as const

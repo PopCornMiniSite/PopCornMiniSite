@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="chest-grad" x1="20" y1="30" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00D4AA"/>
+      <stop offset="100%" stop-color="#00BE96"/>
+    </linearGradient>
+    <linearGradient id="chest-lid" x1="20" y1="30" x2="100" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00F5C4"/>
+      <stop offset="100%" stop-color="#00D4AA"/>
+    </linearGradient>
+    <filter id="chest-glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Box body -->
+  <rect x="25" y="55" width="70" height="45" rx="4" fill="url(#chest-grad)" filter="url(#chest-glow)"/>
+  <!-- Lid -->
+  <path d="M20 55 L60 35 L100 55 Z" fill="url(#chest-lid)" stroke="#00BE96" stroke-width="1"/>
+  <!-- Lock -->
+  <circle cx="60" cy="68" r="6" fill="#0A0A0F" opacity="0.6"/>
+  <rect x="57" y="68" width="6" height="8" rx="1" fill="#0A0A0F" opacity="0.6"/>
+  <!-- Shine -->
+  <path d="M30 60 L35 55 L35 60 Z" fill="white" opacity="0.3"/>
+</svg>

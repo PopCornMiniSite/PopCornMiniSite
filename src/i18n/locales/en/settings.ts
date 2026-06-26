@@ -1,0 +1,15 @@
+export default {
+  title: 'Settings',
+  language: 'Language',
+  notifications: 'Notifications',
+  push_notifications: 'Push Notifications',
+  party_notifications: 'Party Notifications',
+  privacy: 'Privacy',
+  show_online: 'Show Online Status',
+  show_watch_party: 'Show Watch Party Activity',
+  logout: 'Log Out',
+  theme: 'Theme',
+  dark_mode: 'Dark Mode',
+  light_mode: 'Light Mode',
+  system: 'System',
+} as const

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="trophy-grad" x1="30" y1="10" x2="90" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FF8C00"/>
+    </linearGradient>
+    <linearGradient id="trophy-cup" x1="35" y1="20" x2="85" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFEB3B"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+    <filter id="trophy-glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Cup -->
+  <path d="M35 20 L35 55 Q35 70 60 75 Q85 70 85 55 L85 20 Z" fill="url(#trophy-cup)" filter="url(#trophy-glow)"/>
+  <!-- Left handle -->
+  <path d="M35 30 Q15 30 15 45 Q15 55 35 55" fill="none" stroke="url(#trophy-grad)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Right handle -->
+  <path d="M85 30 Q105 30 105 45 Q105 55 85 55" fill="none" stroke="url(#trophy-grad)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Stem -->
+  <rect x="52" y="75" width="16" height="15" rx="2" fill="url(#trophy-grad)"/>
+  <!-- Base -->
+  <rect x="38" y="90" width="44" height="10" rx="3" fill="url(#trophy-grad)"/>
+  <!-- Shine -->
+  <path d="M42 25 L45 20 L45 35 Z" fill="white" opacity="0.4"/>
+</svg>

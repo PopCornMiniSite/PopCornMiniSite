@@ -1,0 +1,15 @@
+export default {
+  title: 'الإشعارات',
+  no_notifications: 'لا توجد إشعارات بعد.',
+  mark_all_read: 'تحديد الكل كمقروء',
+  friend_request: 'طلب صداقة',
+  friend_accepted: 'تم قبول الصداقة',
+  comment_reply: 'رد على تعليق',
+  comment_like: 'إعجاب بتعليق',
+  rating_like: 'إعابة بتقييم',
+  party_invite: 'دعوة حفلة',
+  party_started: ' بدأت الحفلة',
+  purchase_completed: 'اكتمل الشراء',
+  achievement_unlocked: 'تم فتح إنجاز',
+  system: 'النظام',
+} as const

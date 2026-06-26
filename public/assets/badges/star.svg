@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="star-grad" x1="30" y1="10" x2="90" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#FFA500"/>
+      <stop offset="100%" stop-color="#FF6B35"/>
+    </linearGradient>
+    <filter id="star-glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Star -->
+  <polygon points="60,10 72,42 106,46 80,70 88,104 60,86 32,104 40,70 14,46 48,42" fill="url(#star-grad)" filter="url(#star-glow)"/>
+  <!-- Inner star highlight -->
+  <polygon points="60,22 68,44 92,47 74,64 79,88 60,76 41,88 46,64 28,47 52,44" fill="white" opacity="0.2"/>
+</svg>

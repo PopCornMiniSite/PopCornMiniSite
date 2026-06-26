@@ -1,0 +1,15 @@
+export default {
+  title: 'الإعدادات',
+  language: 'اللغة',
+  notifications: 'الإشعارات',
+  push_notifications: 'إشعارات الدفع',
+  party_notifications: 'إشعارات الحفلات',
+  privacy: 'الخصوصية',
+  show_online: 'إظهار حالة الاتصال',
+  show_watch_party: 'إظهار نشاط حفلة المشاهدة',
+  logout: 'تسجيل الخروج',
+  theme: 'المظهر',
+  dark_mode: 'الوضع الداكن',
+  light_mode: 'الوضع الفاتح',
+  system: 'النظام',
+} as const

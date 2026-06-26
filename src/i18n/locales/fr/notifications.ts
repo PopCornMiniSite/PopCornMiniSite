@@ -1,0 +1,15 @@
+export default {
+  title: 'Notifications',
+  no_notifications: 'Aucune notification pour le moment.',
+  mark_all_read: 'Tout marquer lu',
+  friend_request: 'Demande d\'ami',
+  friend_accepted: 'Ami accepté',
+  comment_reply: 'Réponse à un commentaire',
+  comment_like: 'J\'aime un commentaire',
+  rating_like: 'J\'aime un avis',
+  party_invite: 'Invitation à une soirée',
+  party_started: 'Soirée commencée',
+  purchase_completed: 'Achat terminé',
+  achievement_unlocked: 'Succès débloqué',
+  system: 'Système',
+} as const

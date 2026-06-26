@@ -1,0 +1,15 @@
+export default {
+  title: 'Notifications',
+  no_notifications: 'No notifications yet.',
+  mark_all_read: 'Mark All Read',
+  friend_request: 'Friend Request',
+  friend_accepted: 'Friend Accepted',
+  comment_reply: 'Comment Reply',
+  comment_like: 'Comment Like',
+  rating_like: 'Rating Like',
+  party_invite: 'Party Invite',
+  party_started: 'Party Started',
+  purchase_completed: 'Purchase Completed',
+  achievement_unlocked: 'Achievement Unlocked',
+  system: 'System',
+} as const

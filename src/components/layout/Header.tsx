@@ -47,6 +47,17 @@ export function Header() {
           </span>
         </div>
 
+        {/* Channel link */}
+        <a
+          href="https://t.me/PopCornMini"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 text-white/40 hover:text-brand-primary transition-colors"
+          aria-label="قناة التحديثات"
+        >
+          <Send className="w-4 h-4" />
+        </a>
+
         {/* Search bar — persistent, glassmorphism */}
         <form
           onSubmit={handleSearchSubmit}

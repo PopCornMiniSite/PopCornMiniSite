@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm install
+      - run: npm install --legacy-peer-deps
       - run: npm run build
         env:
           VITE_TURSO_URL: ${{ secrets.VITE_TURSO_URL }}

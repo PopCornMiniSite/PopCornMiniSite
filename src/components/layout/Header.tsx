@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Search, Send } from 'lucide-react'
 
 export function Header() {
-  const { user, isMock } = useTelegram()
+  const { user } = useTelegram()
   const navigate = useNavigate()
   const [searchFocused, setSearchFocused] = useState(false)
 

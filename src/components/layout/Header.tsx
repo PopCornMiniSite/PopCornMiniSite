@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTelegram } from '@/providers/TelegramProvider'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Search } from 'lucide-react'
+import { Search, Send } from 'lucide-react'
 
 export function Header() {
   const { user, isMock } = useTelegram()
@@ -45,11 +45,6 @@ export function Header() {
           <span className="font-display font-bold text-base text-text-primary leading-none hidden sm:inline">
             PopCorn
           </span>
-          {isMock && (
-            <span className="rounded bg-gradient-to-r from-[#FF6B35] to-[#FF8A5B] px-1.5 py-0.5 text-[10px] font-medium text-white leading-none">
-              DEV
-            </span>
-          )}
         </div>
 
         {/* Search bar — persistent, glassmorphism */}

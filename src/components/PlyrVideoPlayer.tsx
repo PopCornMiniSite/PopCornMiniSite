@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { VASTClient, VASTParser } from 'vast-client'
+import { VASTClient } from 'vast-client'
 
 const VAST_AD_URL = 'https://hilltopads.com/vast?pid=YOUR_HILLTOPADS_ID'
 

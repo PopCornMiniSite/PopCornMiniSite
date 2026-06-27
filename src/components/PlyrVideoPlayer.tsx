@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { VASTClient } from 'vast-client'
 
-const VAST_AD_URL = 'https://physicaldad.com/d/m.F/zWd/GfN/vYZ/GFUN/EeQmP9su/ZuURlakRPuTGcTxQNtz/Ue1HMdjQkct-NmzvE/3ZNWT/UVzAMXwh'
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+const VAST_AD_URL = `${API_BASE}/api/v1/stream/vast`
 
 const vastClient = new VASTClient()
 

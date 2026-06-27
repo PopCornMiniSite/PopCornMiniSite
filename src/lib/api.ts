@@ -187,8 +187,9 @@ export function useStreamUrl(
 
   return useQuery({
     queryKey: ['stream', contentType, contentId, season, episode],
-    queryFn: () => apiRequest<StreamUrlResponse>(path),
+    queryFn: () => apiRequest<{ ok: boolean; data: StreamUrlResponse }>(path),
     enabled: !!contentId,
+    select: (res) => res.data,
   })
 }
 

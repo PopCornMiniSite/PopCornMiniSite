@@ -1,15 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
-import { useSeries, useSimilarSeries, useCreateParty } from '@/lib/api'
+import { useSeries, useSimilarSeries, useStreamUrl, useCreateParty, useReportProgress } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
 import { MovieCard } from '@/components/MovieCard'
 import { ProgressBar } from '@/components/ProgressBar'
 import { CommentsSection } from '@/components/CommentsSection'
+import { PlyrVideoPlayer } from '@/components/PlyrVideoPlayer'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Star, Play, Calendar, Users } from 'lucide-react'
+import { ArrowRight, Star, Play, Calendar, Users, X } from 'lucide-react'
 import { formatVoteAverage } from '@/lib/format'
 import type { Season } from '@/types/series'
 
@@ -44,6 +46,16 @@ export default function SeriesDetail() {
   const seriesId = Number(id)
   const { data: series, isLoading, error } = useSeries(seriesId)
   const { data: similarData } = useSimilarSeries(seriesId)
+  const createParty = useCreateParty()
+
+  const [showPlayer, setShowPlayer] = useState(false)
+  const playerRef = useRef<HTMLDivElement>(null)
+
+  const { data: stream, isLoading: streamLoading, error: streamError } = useStreamUrl('episode', seriesId, 1, 1)
+  const reportProgress = useReportProgress()
+  const lastPositionRef = useRef(0)
+  const lastDurationRef = useRef(0)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (series) {
@@ -51,6 +63,73 @@ export default function SeriesDetail() {
     }
     return () => { setPageTitle('') }
   }, [series, setPageTitle])
+
+  useEffect(() => {
+    if (!showPlayer) return
+    progressIntervalRef.current = setInterval(() => {
+      if (lastPositionRef.current > 0 && lastDurationRef.current > 0) {
+        reportProgress.mutate({
+          content_type: 'episode',
+          content_id: seriesId,
+          season: 1,
+          episode: 1,
+          position: lastPositionRef.current,
+          duration: lastDurationRef.current,
+          completed: false,
+        })
+      }
+    }, 30000)
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+    }
+  }, [showPlayer, seriesId, reportProgress])
+
+  useEffect(() => {
+    return () => {
+      if (lastPositionRef.current > 0) {
+        reportProgress.mutate({
+          content_type: 'episode',
+          content_id: seriesId,
+          season: 1,
+          episode: 1,
+          position: lastPositionRef.current,
+          duration: lastDurationRef.current,
+          completed: false,
+        })
+      }
+      const saved = JSON.parse(localStorage.getItem('continue_watching') ?? '[]') as Array<{
+        id: number; type: string; position: number; duration: number
+      }>
+      const existing = saved.findIndex((s) => s.id === seriesId && s.type === 'episode')
+      const entry = { id: seriesId, type: 'episode', position: lastPositionRef.current, duration: lastDurationRef.current }
+      if (existing >= 0) saved[existing] = entry
+      else saved.push(entry)
+      localStorage.setItem('continue_watching', JSON.stringify(saved))
+    }
+  }, [seriesId, reportProgress])
+
+  useEffect(() => {
+    if (showPlayer && playerRef.current) {
+      playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showPlayer])
+
+  const handleProgress = useCallback((position: number, duration: number) => {
+    lastPositionRef.current = position
+    lastDurationRef.current = duration
+  }, [])
+
+  const handleEnded = useCallback(() => {
+    reportProgress.mutate({
+      content_type: 'episode',
+      content_id: seriesId,
+      season: 1,
+      episode: 1,
+      position: lastPositionRef.current,
+      duration: lastDurationRef.current,
+      completed: true,
+    })
+  }, [seriesId, reportProgress])
 
   if (isLoading) {
     return (
@@ -80,7 +159,6 @@ export default function SeriesDetail() {
 
   const seasons = series.seasons ?? []
   const similarSeries = similarData ?? []
-  const createParty = useCreateParty()
 
   return (
     <motion.div className="min-h-screen" variants={pageVariants as any} initial="initial" animate="animate" exit="exit">
@@ -141,10 +219,10 @@ export default function SeriesDetail() {
         </div>
 
         <div className="flex gap-3 mt-4">
-          <Button size="lg" variant="primary" iconLeft={<Play className="w-4 h-4" />}
-            onClick={() => navigate(`/watch/episode/${series.tmdb_id}?season=1&episode=1`)}
+          <Button size="lg" variant="primary" iconLeft={showPlayer ? <X className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            onClick={() => setShowPlayer((prev) => !prev)}
             data-testid="series-watch-btn">
-            مشاهدة
+            {showPlayer ? 'إغلاق المشغل' : 'مشاهدة'}
           </Button>
           <Button size="lg" variant="outline" iconLeft={<Users className="w-4 h-4" />}
             onClick={async () => {
@@ -162,6 +240,28 @@ export default function SeriesDetail() {
             مع الأصدقاء
           </Button>
         </div>
+
+        {/* Inline Player */}
+        {showPlayer && (
+          <div ref={playerRef} className="mt-4 rounded-xl overflow-hidden">
+            {streamLoading ? (
+              <Skeleton className="w-full aspect-video rounded-xl" />
+            ) : streamError || !stream?.url ? (
+              <div className="w-full aspect-video bg-bg-tertiary rounded-xl flex items-center justify-center px-4">
+                <p className="text-sm text-text-tertiary text-center">
+                  {t('player', 'Unable to load stream')}
+                </p>
+              </div>
+            ) : (
+              <PlyrVideoPlayer
+                url={stream.url}
+                autoPlay
+                onProgress={handleProgress}
+                onEnded={handleEnded}
+              />
+            )}
+          </div>
+        )}
 
         <p className="text-sm text-text-secondary leading-relaxed mt-4">
           {series.overview}

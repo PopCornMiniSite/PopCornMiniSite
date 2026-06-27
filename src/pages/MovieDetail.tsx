@@ -1,16 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
-import { useMovie, useMovieCredits, useSimilarMovies } from '@/lib/api'
+import { useMovie, useMovieCredits, useSimilarMovies, useStreamUrl, useCreateParty, useReportProgress } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
 import { MovieCard } from '@/components/MovieCard'
 import { ProgressBar } from '@/components/ProgressBar'
 import { CommentsSection } from '@/components/CommentsSection'
+import { PlyrVideoPlayer } from '@/components/PlyrVideoPlayer'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { useCreateParty } from '@/lib/api'
-import { ArrowRight, Star, Clock, Play, Calendar, Users } from 'lucide-react'
+import { ArrowRight, Star, Clock, Play, Calendar, Users, X } from 'lucide-react'
 import { formatVoteAverage } from '@/lib/format'
 
 function CastCard({ name, character, profile_url }: { name: string; character: string; profile_url?: string | null }) {
@@ -42,6 +43,16 @@ export default function MovieDetail() {
   const { data: movie, isLoading, error } = useMovie(movieId)
   const { data: creditsData } = useMovieCredits(movieId)
   const { data: similarData } = useSimilarMovies(movieId)
+  const createParty = useCreateParty()
+
+  const [showPlayer, setShowPlayer] = useState(false)
+  const playerRef = useRef<HTMLDivElement>(null)
+
+  const { data: stream, isLoading: streamLoading, error: streamError } = useStreamUrl('movie', movieId)
+  const reportProgress = useReportProgress()
+  const lastPositionRef = useRef(0)
+  const lastDurationRef = useRef(0)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (movie) {
@@ -49,6 +60,67 @@ export default function MovieDetail() {
     }
     return () => { setPageTitle('') }
   }, [movie, setPageTitle])
+
+  useEffect(() => {
+    if (!showPlayer) return
+    progressIntervalRef.current = setInterval(() => {
+      if (lastPositionRef.current > 0 && lastDurationRef.current > 0) {
+        reportProgress.mutate({
+          content_type: 'movie',
+          content_id: movieId,
+          position: lastPositionRef.current,
+          duration: lastDurationRef.current,
+          completed: false,
+        })
+      }
+    }, 30000)
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+    }
+  }, [showPlayer, movieId, reportProgress])
+
+  useEffect(() => {
+    return () => {
+      if (lastPositionRef.current > 0) {
+        reportProgress.mutate({
+          content_type: 'movie',
+          content_id: movieId,
+          position: lastPositionRef.current,
+          duration: lastDurationRef.current,
+          completed: false,
+        })
+      }
+      const saved = JSON.parse(localStorage.getItem('continue_watching') ?? '[]') as Array<{
+        id: number; type: string; position: number; duration: number
+      }>
+      const existing = saved.findIndex((s) => s.id === movieId && s.type === 'movie')
+      const entry = { id: movieId, type: 'movie', position: lastPositionRef.current, duration: lastDurationRef.current }
+      if (existing >= 0) saved[existing] = entry
+      else saved.push(entry)
+      localStorage.setItem('continue_watching', JSON.stringify(saved))
+    }
+  }, [movieId, reportProgress])
+
+  useEffect(() => {
+    if (showPlayer && playerRef.current) {
+      playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showPlayer])
+
+  const handleProgress = useCallback((position: number, duration: number) => {
+    lastPositionRef.current = position
+    lastDurationRef.current = duration
+  }, [])
+
+  const handleEnded = useCallback(() => {
+    reportProgress.mutate({
+      content_type: 'movie',
+      content_id: movieId,
+      position: lastPositionRef.current,
+      duration: lastDurationRef.current,
+      completed: true,
+    })
+  }, [movieId, reportProgress])
 
   if (isLoading) {
     return (
@@ -78,7 +150,6 @@ export default function MovieDetail() {
 
   const cast = creditsData?.cast ?? []
   const similarMovies = similarData ?? []
-  const createParty = useCreateParty()
 
   return (
     <motion.div className="min-h-screen" variants={pageVariants as any} initial="initial" animate="animate" exit="exit">
@@ -152,9 +223,9 @@ export default function MovieDetail() {
 
         {/* Action buttons */}
         <div className="flex gap-3 mt-4">
-          <Button size="lg" variant="primary" iconLeft={<Play className="w-4 h-4" />}
-            onClick={() => navigate(`/watch/movie/${movie.tmdb_id}`)} data-testid="movie-watch-btn">
-            مشاهدة
+          <Button size="lg" variant="primary" iconLeft={showPlayer ? <X className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            onClick={() => setShowPlayer((prev) => !prev)} data-testid="movie-watch-btn">
+            {showPlayer ? 'إغلاق المشغل' : 'مشاهدة'}
           </Button>
           <Button size="lg" variant="outline" iconLeft={<Users className="w-4 h-4" />}
             onClick={async () => {
@@ -172,6 +243,28 @@ export default function MovieDetail() {
             مع الأصدقاء
           </Button>
         </div>
+
+        {/* Inline Player */}
+        {showPlayer && (
+          <div ref={playerRef} className="mt-4 rounded-xl overflow-hidden">
+            {streamLoading ? (
+              <Skeleton className="w-full aspect-video rounded-xl" />
+            ) : streamError || !stream?.url ? (
+              <div className="w-full aspect-video bg-bg-tertiary rounded-xl flex items-center justify-center px-4">
+                <p className="text-sm text-text-tertiary text-center">
+                  {t('player', 'Unable to load stream')}
+                </p>
+              </div>
+            ) : (
+              <PlyrVideoPlayer
+                url={stream.url}
+                autoPlay
+                onProgress={handleProgress}
+                onEnded={handleEnded}
+              />
+            )}
+          </div>
+        )}
 
         {/* Overview */}
         <p className="text-sm text-text-secondary leading-relaxed mt-4">

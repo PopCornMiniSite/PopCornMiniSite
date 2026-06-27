@@ -1,0 +1,24 @@
+name: Keep Spaces Warm
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          urls=(
+            "https://multimedia-cryptography-benchmarks-popcorn-api.hf.space/health"
+            "https://mml-analysing-shyper-and-api-mid-structer-db.hf.space/health"
+            "https://multimedia-cryptography-benchmarks-proxy.hf.space/health"
+            "https://rayig-proxy.hf.space/health"
+            "https://ToolKit-backend-proxy.hf.space/health"
+            "https://Dgntsnfangskgsjafjyjysjtsjtsjwtjfsjyejyrky-proxy.hf.space/health"
+          )
+          for url in "${urls[@]}"; do
+            echo "Pinging $url"
+            curl -sf --max-time 20 "$url" > /dev/null && echo "  OK" || echo "  FAIL"
+          done

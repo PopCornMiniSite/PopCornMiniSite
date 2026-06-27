@@ -73,21 +73,15 @@ export function PlyrVideoPlayer({ url, autoPlay, onProgress, onEnded }: PlyrVide
     setStatus('loading')
     el.src = adUrl
     el.load()
+    el.controls = false
+
+    const timer = setTimeout(() => startContent(), 15000)
 
     const onAdReady = () => {
+      clearTimeout(timer)
       setStatus('ready')
       el.play().catch(() => {})
-      let count = Math.ceil(el.duration || 5)
-      setAdCountdown(count)
-      const interval = setInterval(() => {
-        count = Math.ceil((el.duration || 5) - el.currentTime)
-        setAdCountdown(Math.max(0, count))
-      }, 250)
-      el.addEventListener('timeupdate', () => {
-        count = Math.ceil((el.duration || 5) - el.currentTime)
-        setAdCountdown(Math.max(0, count))
-      }, { once: true })
-      return () => clearInterval(interval)
+      setAdCountdown(Math.ceil(el.duration || 5))
     }
 
     const onAdEnd = () => {
@@ -99,9 +93,10 @@ export function PlyrVideoPlayer({ url, autoPlay, onProgress, onEnded }: PlyrVide
 
     el.addEventListener('loadeddata', onAdReady, { once: true })
     el.addEventListener('ended', onAdEnd, { once: true })
-    el.addEventListener('error', () => startContent(), { once: true })
+    el.addEventListener('error', () => { clearTimeout(timer); startContent() }, { once: true })
 
     return () => {
+      clearTimeout(timer)
       el.pause()
       el.removeAttribute('src')
       el.load()
@@ -113,6 +108,16 @@ export function PlyrVideoPlayer({ url, autoPlay, onProgress, onEnded }: PlyrVide
     const el = videoRef.current
     if (!el || !url) return
 
+    setStatus('loading')
+    el.src = url
+    el.load()
+    el.controls = true
+
+    const onReady = () => {
+      setStatus('ready')
+      if (autoPlay) el.play().catch(() => {})
+    }
+    const onErr = () => setStatus('error')
     const onTime = () => {
       if (progressRef.current && el.duration) {
         progressRef.current(el.currentTime, el.duration)
@@ -120,14 +125,18 @@ export function PlyrVideoPlayer({ url, autoPlay, onProgress, onEnded }: PlyrVide
     }
     const onEnd = () => endedRef.current?.()
 
+    el.addEventListener('loadeddata', onReady, { once: true })
+    el.addEventListener('error', onErr, { once: true })
     el.addEventListener('timeupdate', onTime)
     el.addEventListener('ended', onEnd, { once: true })
 
     return () => {
+      el.removeEventListener('loadeddata', onReady)
+      el.removeEventListener('error', onErr)
       el.removeEventListener('timeupdate', onTime)
       el.removeEventListener('ended', onEnd)
     }
-  }, [phase, url])
+  }, [phase, url, autoPlay])
 
   return (
     <div className="w-full bg-black rounded-lg overflow-hidden relative" style={{ aspectRatio: '16 / 9' }}>
@@ -143,9 +152,19 @@ export function PlyrVideoPlayer({ url, autoPlay, onProgress, onEnded }: PlyrVide
         </div>
       )}
       {phase === 'ad' && status === 'ready' && (
-        <div className="absolute top-3 right-3 z-10 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full">
-          إعلان {adCountdown > 0 ? `- ${adCountdown}ث` : ''}
-        </div>
+        <>
+          <div className="absolute top-3 right-3 z-10 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full">
+            إعلان {adCountdown > 0 ? `- ${adCountdown}ث` : ''}
+          </div>
+          {adCountdown <= 5 && (
+            <button
+              onClick={startContent}
+              className="absolute bottom-4 left-4 z-10 bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+            >
+              تخطي الإعلان
+            </button>
+          )}
+        </>
       )}
     </div>
   )

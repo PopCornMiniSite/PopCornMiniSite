@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { VASTClient } from 'vast-client'
 
-const VAST_AD_URL = 'https://hilltopads.com/vast?pid=YOUR_HILLTOPADS_ID'
+const VAST_AD_URL = 'https://physicaldad.com/d/m.F/zWd/GfN/vYZ/GFUN/EeQmP9su/ZuURlakRPuTGcTxQNtz/Ue1HMdjQkct-NmzvE/3ZNWT/UVzAMXwh'
 
 const vastClient = new VASTClient()
 

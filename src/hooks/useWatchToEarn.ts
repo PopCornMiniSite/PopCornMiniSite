@@ -22,6 +22,7 @@ export function useWatchToEarn() {
         elapsedRef.current = 0
         setProgress(0)
         creditKernels(KERNELS_PER_INTERVAL)
+        // TODO: Call API POST /api/v1/user/me/wallet/kernels/earn to persist kernels on the server
         toast.success(`+${KERNELS_PER_INTERVAL} PopCorn Kernels earned!`, {
           duration: 3000,
         })

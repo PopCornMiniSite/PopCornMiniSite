@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
-import { useSeries, useSimilarMovies, useCreateParty } from '@/lib/api'
+import { useSeries, useSimilarSeries, useCreateParty } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
 import { MovieCard } from '@/components/MovieCard'
@@ -43,7 +43,7 @@ export default function SeriesDetail() {
 
   const seriesId = Number(id)
   const { data: series, isLoading, error } = useSeries(seriesId)
-  const { data: similarData } = useSimilarMovies(seriesId)
+  const { data: similarData } = useSimilarSeries(seriesId)
 
   useEffect(() => {
     if (series) {

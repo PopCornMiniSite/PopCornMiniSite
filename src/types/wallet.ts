@@ -51,7 +51,7 @@ export interface EarningHistoryResponse {
 }
 
 export interface HybridPurchaseRequest {
-  product_id: string
+  product_id: number
   currency: PurchaseCurrency
   idempotency_key: string
 }
@@ -60,7 +60,7 @@ export interface HybridPurchaseResponse {
   data: {
     invoice_link?: string
     payload?: string
-    product_id: string
+    product_id: number
     currency: PurchaseCurrency
     amount: number
     new_stars_balance: number

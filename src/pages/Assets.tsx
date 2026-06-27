@@ -12,7 +12,7 @@ export default function AssetsPage() {
   const { data: assets, isLoading } = useUserAssets()
   const activateAsset = useActivateAsset()
 
-  const handleActivate = (assetItemId: string, productId: string) => {
+  const handleActivate = (assetItemId: string, productId: number) => {
     activateAsset.mutate({ asset_item_id: assetItemId, product_id: productId })
   }
 

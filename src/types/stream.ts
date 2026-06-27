@@ -2,6 +2,9 @@ export interface StreamUrlResponse {
   url: string
   fallback_used: boolean
   expires_at: string
+  quality?: string
+  file_size?: number
+  archive_id?: number
 }
 
 export interface ProgressReport {

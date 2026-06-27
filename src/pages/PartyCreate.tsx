@@ -49,7 +49,7 @@ export default function PartyCreatePage() {
       password: isPrivate ? password : undefined,
     })
 
-    navigate(`/party/${result.data.room_code}`)
+    navigate(`/party/${result.data.id}`)
   }
 
   const selectSearchResult = (item: any) => {

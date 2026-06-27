@@ -18,13 +18,13 @@ export interface AssetItem {
   id: string
   type: AssetType
   name: string
-  file_url: string
-  preview_url: string
-  metadata: Record<string, unknown>
+  file_url?: string
+  preview_url?: string
+  metadata?: Record<string, unknown>
 }
 
 export interface Product {
-  id: string
+  id: number
   name: string
   description: string
   category: ProductCategory
@@ -37,6 +37,8 @@ export interface Product {
   image_url: string
   preview_images: string[]
   assets: AssetItem[]
+  name_ar?: string
+  name_en?: string
   is_purchasable: boolean
   is_purchased?: boolean
   is_limited: boolean
@@ -50,7 +52,7 @@ export interface Product {
 export interface UserAsset {
   id: string
   user_id: string
-  product_id: string
+  product_id: number
   product: Product
   asset: AssetItem
   is_active: boolean

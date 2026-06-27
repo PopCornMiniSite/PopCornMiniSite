@@ -4,17 +4,14 @@ import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useMediaSession } from '@/hooks/useMediaSession'
 import { useWatchToEarn } from '@/hooks/useWatchToEarn'
-import { useDecryptPlayer } from '@/hooks/useDecryptPlayer'
 import { Slider } from '@/components/ui/slider'
 import { attachHls } from '@/lib/hls'
 import { attachDash } from '@/lib/dash'
 import { Popcorn } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { ManifestData } from '@/lib/turso'
 
 interface VideoPlayerProps {
   url?: string
-  manifestData?: ManifestData
   title?: string
   type: 'movie' | 'episode'
   contentId: number
@@ -42,7 +39,6 @@ const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 
 export function VideoPlayer({
   url,
-  manifestData,
   title = '',
   autoPlay = false,
   onProgress,
@@ -226,8 +222,6 @@ export function VideoPlayer({
     onSeekBackward: () => seekRelative(-10),
   })
 
-  const decryptState = useDecryptPlayer(manifestData ?? null, videoRef)
-
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -298,9 +292,6 @@ export function VideoPlayer({
     const video = videoRef.current
     if (!video) return
 
-    // Decrypt pipeline handles its own MSE, skip URL loading
-    if (manifestData) return
-
     if (!url) return
 
     setError(null)
@@ -332,7 +323,7 @@ export function VideoPlayer({
         streamInstanceRef.current = null
       }
     }
-  }, [url, manifestData])
+  }, [url])
 
   if (error) {
     return (
@@ -383,15 +374,7 @@ export function VideoPlayer({
         data-testid="video-element"
       />
 
-      {manifestData && decryptState.status === 'loading' && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full border-3 border-brand-primary border-t-transparent animate-spin" />
-            <span className="text-xs text-text-tertiary">Decrypting… {decryptState.progress}%</span>
-          </div>
-        </div>
-      )}
-      {!manifestData && isBuffering && (
+      {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div
             className="w-12 h-12 rounded-full border-3 border-brand-primary border-t-transparent animate-spin"

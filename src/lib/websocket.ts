@@ -147,7 +147,7 @@ export class TypedWebSocket {
 
   private startHeartbeat() {
     this.heartbeatTimer = setInterval(() => {
-      this.send({ type: 'heartbeat', timestamp: Date.now() })
+      this.send({ type: 'ping', timestamp: Date.now() })
     }, 5000)
   }
 

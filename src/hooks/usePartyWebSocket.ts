@@ -48,9 +48,9 @@ export function usePartyWebSocket(partyId: string | undefined, enabled: boolean 
       store.removeParticipant(data.user_id)
     })
 
-    ws.on('participants', (data: any) => {
-      if (data.participants) {
-        store.setParticipants(data.participants.map((p: any) => ({
+    ws.on('members', (data: any) => {
+      if (data.members) {
+        store.setParticipants(data.members.map((p: any) => ({
           id: p.user_id,
           user_id: p.user_id,
           name: p.name,
@@ -65,7 +65,7 @@ export function usePartyWebSocket(partyId: string | undefined, enabled: boolean 
     })
 
     ws.on('ready', (data: any) => {
-      store.setBuffering(data.user_id, data.is_ready)
+      store.setParticipantReady(data.user_id, data.is_ready)
     })
 
     ws.on('sync', (data: any) => {

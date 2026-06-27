@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useStreamUrl, useReportProgress, useMovie } from '@/lib/api'
-import { findVideoId, fetchManifest } from '@/lib/turso'
 import { usePlayerStore } from '@/stores/playerStore'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChevronLeft } from 'lucide-react'
-import type { ManifestData } from '@/lib/turso'
 
 export default function WatchPage() {
   const { t } = useTranslation('player')
@@ -19,10 +17,6 @@ export default function WatchPage() {
   const contentId = Number(id)
   const season = searchParams.get('season') ? Number(searchParams.get('season')) : undefined
   const episode = searchParams.get('ep') ? Number(searchParams.get('ep')) : undefined
-
-  const [manifestData, setManifestData] = useState<ManifestData | null>(null)
-  const [manifestLoading, setManifestLoading] = useState(true)
-  const [manifestError, setManifestError] = useState<string | null>(null)
 
   const { data: stream, isLoading: streamLoading, error: streamError } = useStreamUrl(
     contentType,
@@ -39,36 +33,6 @@ export default function WatchPage() {
   const lastDurationRef = useRef(0)
 
   const { setStreamUrl, seek } = usePlayerStore()
-
-  // Try to find video in Turso (new pipeline)
-  useEffect(() => {
-    let cancelled = false
-    setManifestLoading(true)
-    setManifestError(null)
-
-    findVideoId(contentId, contentType, season, episode)
-      .then(videoId => {
-        if (cancelled) return
-        if (!videoId) {
-          setManifestLoading(false)
-          return
-        }
-        return fetchManifest(videoId).then(m => {
-          if (!cancelled) {
-            setManifestData(m)
-            setManifestLoading(false)
-          }
-        })
-      })
-      .catch(e => {
-        if (!cancelled) {
-          setManifestError(e instanceof Error ? e.message : String(e))
-          setManifestLoading(false)
-        }
-      })
-
-    return () => { cancelled = true }
-  }, [contentId, contentType, season, episode])
 
   useEffect(() => {
     if (stream?.url) {
@@ -168,10 +132,10 @@ export default function WatchPage() {
     }
   }, [contentType, contentId, navigate])
 
-  const isLoading = manifestLoading || streamLoading
-  const hasError = manifestError || streamError
+  const isLoading = streamLoading
+  const hasError = streamError
 
-  if (isLoading && !manifestData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary">
         <Skeleton className="w-full aspect-video max-w-3xl" />
@@ -179,7 +143,7 @@ export default function WatchPage() {
     )
   }
 
-  if (hasError && !manifestData) {
+  if (hasError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 bg-bg-primary" data-testid="watch-error">
         <p className="text-lg font-medium text-text-primary">
@@ -204,7 +168,6 @@ export default function WatchPage() {
     <div className="min-h-screen bg-bg-primary" data-testid="watch-page">
       <VideoPlayer
         url={stream?.url ?? ''}
-        manifestData={manifestData ?? undefined}
         title={title ?? ''}
         type={contentType}
         contentId={contentId}

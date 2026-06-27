@@ -58,7 +58,7 @@ export default function LeaderboardPage() {
                   {entry.score.toLocaleString()} {t('leaderboard:points')}
                 </p>
               </div>
-              {entry.user_id === 5703679073 && (
+                {entry.user_id === currentUserId && (
                 <Badge variant="secondary">{t('profile:you')}</Badge>
               )}
             </div>

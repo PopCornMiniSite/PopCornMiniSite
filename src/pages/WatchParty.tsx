@@ -12,9 +12,8 @@ import { useSearchQuery } from '@/lib/api'
 import { useDebounce } from '@/hooks/useLocalStorage'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
-  Play, Search, Film, Tv, Mic, MicOff, Phone, PhoneOff,
+  Play, Search, Film, Tv,
 } from 'lucide-react'
 
 export default function WatchPartyPage() {
@@ -24,8 +23,7 @@ export default function WatchPartyPage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
   const [searchQuery, setSearchQuery] = useState('')
-  const [voiceActive, setVoiceActive] = useState(false)
-  const [voiceMuted, setVoiceMuted] = useState(false)
+  // voice chat removed
 
   const store = usePartyStore()
   const { sendChat, sendReady, isConnected } = usePartyWebSocket(partyId, !!partyId)
@@ -50,15 +48,7 @@ export default function WatchPartyPage() {
     navigate(`/${item.media_type}/${item.tmdb_id}`)
   }
 
-  const toggleVoice = () => {
-    if (!voiceActive) {
-      setVoiceActive(true)
-      setVoiceMuted(false)
-    } else {
-      setVoiceActive(false)
-      setVoiceMuted(false)
-    }
-  }
+  // voice chat removed
 
   const participants = store.participants
 
@@ -142,35 +132,7 @@ export default function WatchPartyPage() {
         )}
       </div>
 
-      {/* Voice call bar */}
-      {voiceActive && (
-        <div className="px-4 py-2 bg-brand-primary/5 border-b border-brand-primary/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-1">
-              {participants.slice(0, 5).map((p, i) => (
-                <div key={p.user_id} className={`w-7 h-7 rounded-full bg-brand-primary/20 border-2 border-bg-primary flex items-center justify-center text-[10px] font-bold text-brand-primary ${i > 0 ? '-mr-1' : ''}`}>
-                  {p.name.charAt(0)}
-                </div>
-              ))}
-            </div>
-            <span className="text-xs text-text-secondary">{t('party:voice_active', { defaultValue: 'محادثة صوتية' })}</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setVoiceMuted(!voiceMuted)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${voiceMuted ? 'bg-semantic-error/20 text-semantic-error' : 'bg-bg-tertiary text-text-secondary hover:text-text-primary'}`}
-            >
-              {voiceMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={toggleVoice}
-              className="w-8 h-8 rounded-full bg-semantic-error/20 text-semantic-error flex items-center justify-center hover:bg-semantic-error/30 transition-colors cursor-pointer"
-            >
-              <PhoneOff className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Voice call bar removed */}
 
       {/* Tabs: Chat / Participants */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
@@ -188,16 +150,7 @@ export default function WatchPartyPage() {
 
         <TabsContent value="participants" className="p-4 overflow-y-auto flex-1">
           <ParticipantList />
-          <div className="mt-4 space-y-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              iconLeft={voiceActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-              onClick={toggleVoice}
-            >
-              {voiceActive ? t('party:end_call', { defaultValue: 'إنهاء المكالمة' }) : t('party:start_call', { defaultValue: 'بدء محادثة صوتية' })}
-            </Button>
-          </div>
+          {/* Voice chat button removed */}
         </TabsContent>
       </Tabs>
 

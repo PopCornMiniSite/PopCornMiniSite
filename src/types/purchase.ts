@@ -4,7 +4,7 @@ import type { PurchaseCurrency } from './wallet'
 export type PurchaseStatus = 'pending' | 'completed' | 'failed' | 'refunded'
 
 export interface CreateInvoiceRequest {
-  product_id: string
+  product_id: number
   idempotency_key: string
 }
 
@@ -19,7 +19,7 @@ export interface CreateInvoiceResponse {
 export interface Purchase {
   id: string
   user_id: string
-  product_id: string
+  product_id: number
   product: Product
   amount_stars: number
   amount_kernels: number

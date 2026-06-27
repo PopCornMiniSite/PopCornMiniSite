@@ -1,97 +1,83 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
-import { useNavigate } from 'react-router-dom'
-import { fetchArchivedMovies, type ArchivedMovie } from '@/lib/turso'
+import { MovieCard } from '@/components/MovieCard'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useUiStore } from '@/stores/uiStore'
+import { useMovies } from '@/lib/api'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+function ScrollRow({ title, movies, isLoading }: { title: string; movies: any[]; isLoading: boolean }) {
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!rowRef.current) return
+    const amount = 300
+    rowRef.current.scrollBy({ left: dir === 'right' ? amount : -amount, behavior: 'smooth' })
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-4">
+        <h2 className="text-base font-bold font-display text-text-primary">{title}</h2>
+        <div className="flex gap-1">
+          <button onClick={() => scroll('left')} className="w-7 h-7 rounded-full bg-bg-tertiary flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button onClick={() => scroll('right')} className="w-7 h-7 rounded-full bg-bg-tertiary flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div ref={rowRef} className="flex gap-3 overflow-x-auto px-4 pb-2 scroll-smooth no-scrollbar">
+        {isLoading
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-[150px]">
+                <Skeleton className="w-[150px] h-[225px] rounded-xl" />
+                <Skeleton className="mt-2 h-4 w-4/5 rounded-md" />
+                <Skeleton className="mt-1.5 h-3 w-1/2 rounded-md" />
+              </div>
+            ))
+          : movies.map((movie) => (
+              <MovieCard key={`${movie.tmdb_id}-${movie.id}`} movie={movie} />
+            ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Home() {
   const { t } = useTranslation('home')
   const setPageTitle = useUiStore((s) => s.setPageTitle)
-  const navigate = useNavigate()
-  const [archived, setArchived] = useState<ArchivedMovie[]>([])
-  const [loading, setLoading] = useState(true)
+
+  const { data: latest, isLoading: latestLoading } = useMovies({ sort_by: 'release_date', per_page: 20 })
+  const { data: trending, isLoading: trendingLoading } = useMovies({ sort_by: 'popularity', per_page: 20 })
 
   useEffect(() => {
     setPageTitle(t('welcome'))
   }, [setPageTitle, t])
 
-  useEffect(() => {
-    fetchArchivedMovies()
-      .then((rows) => {
-        setArchived(rows)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
-
-  const [seconds, setSeconds] = useState(0)
-  useEffect(() => {
-    const interval = setInterval(() => setSeconds((s) => s + 1), 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="relative" data-testid="home-page">
-        <Header />
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="animate-spin w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full" />
-        </div>
-      </div>
-    )
-  }
-
-  if (archived.length === 0) {
-    const dots = '.'.repeat((seconds % 3) + 1)
-    return (
-      <div className="relative" data-testid="home-page">
-        <Header />
-        <div className="flex flex-col items-center justify-center h-[70vh] px-6 text-center">
-          <div className="text-6xl mb-4 opacity-30">🎬</div>
-          <h2 className="text-xl font-bold font-display text-text-primary mb-2">
-            {t('no_content_title', { defaultValue: 'No Content Yet' })}
-          </h2>
-          <p className="text-sm text-text-secondary max-w-xs leading-relaxed">
-            {t('no_content_desc', {
-              defaultValue: 'Archive a video using the bot to see it here.',
-            })}
-          </p>
-          <div className="mt-8 text-xs text-text-tertiary font-mono tracking-widest">
-            {t('waiting', { defaultValue: 'Waiting for archives' })}{dots}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="relative" data-testid="home-page">
+    <div className="relative pb-8" data-testid="home-page">
       <Header />
-      <div className="relative z-[1] px-4 pt-3">
-        <section className="mt-2">
-          <h2 className="text-lg font-bold font-display text-text-primary tracking-tight mb-3">
-            {t('archived', { defaultValue: 'Archived' })}
-          </h2>
-          <div
-            className="flex flex-col gap-3"
-          >
-            {archived.map((item) => (
-              <button
-                key={item.random_name}
-                onClick={() => navigate(`/watch/movie/${item.tmdb_id}`)}
-                className="w-full text-left bg-[var(--tg-section-bg-color)] rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
-              >
-                <div className="text-text-primary font-medium truncate">
-                  {item.title || item.original_filename}
-                </div>
-                <div className="text-xs text-text-secondary mt-1">
-                  {new Date(item.uploaded_at).toLocaleDateString()}
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
+      <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+        <h2 className="text-xl font-bold font-display text-text-primary mb-1">
+          {t('welcome')}
+        </h2>
+        <p className="text-sm text-text-tertiary">{t('subtitle')}</p>
+      </div>
+
+      <div className="space-y-6">
+        <ScrollRow
+          title={t('latest')}
+          movies={latest?.items ?? []}
+          isLoading={latestLoading}
+        />
+        <ScrollRow
+          title={t('trending')}
+          movies={trending?.items ?? []}
+          isLoading={trendingLoading}
+        />
       </div>
     </div>
   )

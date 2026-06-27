@@ -1,4 +1,5 @@
 export interface Movie {
+  id: number
   tmdb_id: number
   title: string
   overview: string
@@ -13,8 +14,6 @@ export interface Movie {
 
 export interface Archive {
   random_name: string
-  account1_stream_url?: string
-  account2_stream_url?: string
   status: 'active' | 'reuploading' | 'deleted' | 'banned'
   file_size: number
 }

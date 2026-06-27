@@ -212,9 +212,12 @@ export interface CreatePartyRequest {
 
 export interface CreatePartyResponse {
   data: {
-    room: PartyRoom
+    id: number
     room_code: string
+    ws_url: string
+    host_id: number
     share_link: string
+    created_at: string
   }
 }
 
@@ -225,8 +228,10 @@ export interface JoinPartyRequest {
 
 export interface JoinPartyResponse {
   data: {
-    room: PartyRoom
+    id: number
+    room_code: string
     ws_url: string
+    members: Participant[]
   }
 }
 

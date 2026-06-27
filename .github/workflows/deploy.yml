@@ -25,8 +25,6 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_TURSO_URL: ${{ secrets.VITE_TURSO_URL }}
-          VITE_TURSO_TOKEN: ${{ secrets.VITE_TURSO_TOKEN }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

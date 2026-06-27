@@ -36,6 +36,8 @@ export class ApiRequestError extends Error {
   }
 }
 
+const REQUEST_TIMEOUT = 15_000
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
@@ -50,12 +52,18 @@ export async function apiRequest<T>(
     headers['Authorization'] = `tma ${initDataRaw}`
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    })
 
   if (!response.ok) {
+    clearTimeout(timeoutId)
     let errorData: ApiError
     try {
       errorData = (await response.json()) as ApiError
@@ -72,7 +80,16 @@ export async function apiRequest<T>(
     )
   }
 
+  clearTimeout(timeoutId)
   return response.json() as Promise<T>
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err instanceof ApiRequestError) throw err
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiRequestError('TIMEOUT', 'Request timed out', 408)
+    }
+    throw new ApiRequestError('NETWORK', (err as Error).message || 'Network error')
+  }
 }
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -82,7 +99,7 @@ export function useInitAuth() {
 
   return useMutation({
     mutationFn: async (initDataRaw: string) => {
-      return apiRequest<AuthResponse>(
+      return apiRequest<{ ok: boolean; data: AuthResponse }>(
         '/api/v1/auth/init',
         {
           method: 'POST',
@@ -92,7 +109,7 @@ export function useInitAuth() {
       )
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['auth', 'user'], data.user)
+      queryClient.setQueryData(['auth', 'user'], data.data.user)
     },
   })
 }
@@ -101,9 +118,9 @@ export function useCurrentUser(initDataRaw: string | null) {
   return useQuery({
     queryKey: ['auth', 'user'],
     queryFn: () =>
-      apiRequest<{ user: User }>('/api/v1/auth/me', {}, initDataRaw ?? undefined),
+      apiRequest<{ ok: boolean; data: { user: User } }>('/api/v1/auth/me', {}, initDataRaw ?? undefined),
     enabled: !!initDataRaw,
-    select: (data) => data.user,
+    select: (data) => data.data.user,
   })
 }
 
@@ -187,6 +204,16 @@ export function useReportProgress() {
 
 // ─── Series ────────────────────────────────────────────────────────────────────
 
+export function useSimilarSeries(id: number) {
+  return useQuery({
+    queryKey: ['series', id, 'similar'],
+    queryFn: () =>
+      apiRequest<{ ok: boolean; data: { items: Movie[] } }>(`/api/v1/series/${id}/similar`),
+    enabled: !!id,
+    select: (res) => res.data.items,
+  })
+}
+
 export function useSeries(id: number) {
   return useQuery({
     queryKey: ['series', id],
@@ -251,7 +278,7 @@ export function useActivateAsset() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: { asset_item_id: string; product_id: string }) =>
+    mutationFn: (request: { asset_item_id: string; product_id: number }) =>
       apiRequest<ActivateAssetResponse>('/api/v1/user/me/asset/activate', {
         method: 'POST',
         body: JSON.stringify(request),

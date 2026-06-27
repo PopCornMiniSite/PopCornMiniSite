@@ -32,6 +32,7 @@ interface PartyState {
   setBuffering: (userId: string, isBuffering: boolean) => void
   setError: (error: string | null) => void
   setIsConnected: (connected: boolean) => void
+  setParticipantReady: (userId: string, isReady: boolean) => void
   reset: () => void
 }
 
@@ -94,5 +95,11 @@ export const usePartyStore = create<PartyState>((set) => ({
     })),
   setError: (error) => set({ error }),
   setIsConnected: (connected) => set({ isConnected: connected }),
+  setParticipantReady: (userId, isReady) =>
+    set((s) => ({
+      participants: s.participants.map((p) =>
+        p.user_id === userId ? { ...p, is_ready: isReady } : p
+      ),
+    })),
   reset: () => set(initialState),
 }))

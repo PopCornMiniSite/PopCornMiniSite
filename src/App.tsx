@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Suspense, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { Suspense, useEffect, useCallback } from 'react'
 import { TelegramProvider, useTelegram } from '@/providers/TelegramProvider'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { I18nProvider } from '@/providers/I18nProvider'
@@ -8,6 +8,8 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { SuspenseWrapper } from '@/components/layout/SuspenseWrapper'
 import { lazyLoad } from '@/lib/lazyLoad'
 import { useInitAuth } from '@/lib/api'
+import { PlayerProvider, usePlayer } from '@/contexts/PlayerContext'
+import { FloatingPlayer } from '@/components/FloatingPlayer'
 import { Toaster } from 'sonner'
 import './i18n/i18n'
 
@@ -63,24 +65,52 @@ function AuthInit() {
   return null
 }
 
+function FloatingPlayerWrapper() {
+  const loc = useLocation()
+  const { showFloating } = usePlayer()
+  const isDetail = loc.pathname.startsWith('/movie/') || loc.pathname.startsWith('/series/') || loc.pathname.startsWith('/season/')
+  if (showFloating && !isDetail) {
+    return <FloatingPlayer />
+  }
+  return null
+}
+
+function TelegramBackButton() {
+  const loc = useLocation()
+  const goBack = useCallback(() => window.history.back(), [])
+  useEffect(() => {
+    const tg = (window as any).Telegram?.WebApp
+    if (!tg?.BackButton) return
+    if (loc.pathname !== '/') {
+      tg.BackButton.show()
+      tg.BackButton.onClick(goBack)
+    } else {
+      tg.BackButton.hide()
+    }
+    return () => { tg.BackButton?.offClick(goBack) }
+  }, [loc.pathname, goBack])
+  return null
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TelegramProvider>
         <ThemeProvider>
           <I18nProvider>
-            <BrowserRouter basename="/PopCornMiniSite">
-              <AuthInit />
-              <Routes>
-                <Route path="/" element={<PageContainer />}>
-                  <Route
-                    index
-                    element={
-                      <Suspense fallback={<SuspenseWrapper />}>
-                        <Home />
-                      </Suspense>
-                    }
-                  />
+            <PlayerProvider>
+              <BrowserRouter basename="/PopCornMiniSite">
+                <AuthInit />
+                <Routes>
+                  <Route path="/" element={<PageContainer />}>
+                    <Route
+                      index
+                      element={
+                        <Suspense fallback={<SuspenseWrapper />}>
+                          <Home />
+                        </Suspense>
+                      }
+                    />
                   <Route
                     path="discover"
                     element={
@@ -307,8 +337,10 @@ export default function App() {
                   />
                 </Route>
               </Routes>
+              <FloatingPlayerWrapper />
+              <TelegramBackButton />
             </BrowserRouter>
-            <Toaster
+             <Toaster
               position="top-center"
               toastOptions={{
                 style: {
@@ -318,6 +350,7 @@ export default function App() {
                 },
               }}
             />
+          </PlayerProvider>
           </I18nProvider>
         </ThemeProvider>
       </TelegramProvider>

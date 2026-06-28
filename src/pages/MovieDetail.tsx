@@ -258,6 +258,7 @@ export default function MovieDetail() {
             ) : (
               <PlyrVideoPlayer
                 url={stream.url}
+                title={movie.title}
                 autoPlay
                 onProgress={handleProgress}
                 onEnded={handleEnded}

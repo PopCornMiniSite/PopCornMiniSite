@@ -255,6 +255,7 @@ export default function SeriesDetail() {
             ) : (
               <PlyrVideoPlayer
                 url={stream.url}
+                title={series.name}
                 autoPlay
                 onProgress={handleProgress}
                 onEnded={handleEnded}

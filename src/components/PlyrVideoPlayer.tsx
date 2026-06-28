@@ -53,6 +53,8 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
   const adCountdownRef = useRef(AD_SKIP_DELAY)
   const adTimerRef = useRef<ReturnType<typeof setInterval>>(undefined)
   const adLoadTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const switchingRef = useRef(false)
+  const adStateRef = useRef<'none' | 'loading' | 'playing' | 'skippable' | 'error' | 'done'>('none')
   const touchCurrentTimeRef = useRef(0)
 
   const controlsTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -68,23 +70,24 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
   const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
   const switchToContent = useCallback(() => {
+    if (switchingRef.current) return
+    switchingRef.current = true
     const el = videoRef.current
-    if (!el || !contentUrlRef.current) return
+    if (!el || !contentUrlRef.current) { switchingRef.current = false; return }
     adUrlRef.current = null
-    hasAdShownRef.current = true
-    setAdState('done')
     clearInterval(adTimerRef.current)
+    setAdState('done')
     el.src = contentUrlRef.current
     el.play().then(() => {
       setPlaying(true)
       setInitialPlayDone(true)
-    }).catch(() => {})
+      switchingRef.current = false
+    }).catch(() => { switchingRef.current = false })
     setDuration(0)
     setCurrentTime(0)
   }, [])
 
   const skipAd = useCallback(() => {
-    clearInterval(adTimerRef.current)
     switchToContent()
   }, [switchToContent])
 
@@ -102,18 +105,20 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     }, 1000)
   }, [])
 
+  const playContent = useCallback(() => {
+    const el = videoRef.current
+    if (!el || !contentUrlRef.current) return
+    el.src = contentUrlRef.current
+    el.play().then(() => { setPlaying(true); setInitialPlayDone(true) }).catch(() => {})
+  }, [])
+
   const fetchAndPlayAd = useCallback(async () => {
     if (!VAST_PROXY || hasAdShownRef.current || !contentUrlRef.current) {
       hasAdShownRef.current = true
-      if (contentUrlRef.current) {
-        const el = videoRef.current
-        if (el) {
-          el.src = contentUrlRef.current
-          el.play().then(() => { setPlaying(true); setInitialPlayDone(true) }).catch(() => {})
-        }
-      }
+      playContent()
       return
     }
+    hasAdShownRef.current = true
     setAdState('loading')
     setStatus('loading')
 
@@ -146,36 +151,21 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
       return false
     }
 
-    try {
+    const ok = await tryVast(VAST_PROXY)
+    if (!ok) {
       clearTimeout(timeout)
-      const ok = await tryVast(VAST_PROXY)
-      if (!ok) {
-        const ok2 = await tryVast(FALLBACK_VAST)
-        if (!ok2) {
-          setAdState('done')
-          hasAdShownRef.current = true
-          if (contentUrlRef.current) {
-            const el = videoRef.current
-            if (el) {
-              el.src = contentUrlRef.current
-              el.play().then(() => { setPlaying(true); setInitialPlayDone(true) }).catch(() => {})
-            }
-          }
-        }
+      const ok2 = await tryVast(FALLBACK_VAST)
+      if (!ok2) {
+        clearTimeout(timeout)
+        setAdState('done')
+        playContent()
+      } else {
+        clearTimeout(timeout)
       }
-    } catch {
+    } else {
       clearTimeout(timeout)
-      setAdState('error')
-      hasAdShownRef.current = true
-      if (contentUrlRef.current) {
-        const el = videoRef.current
-        if (el) {
-          el.src = contentUrlRef.current
-          el.play().then(() => { setPlaying(true); setInitialPlayDone(true) }).catch(() => {})
-        }
-      }
     }
-  }, [startAdTimer, switchToContent])
+  }, [startAdTimer, switchToContent, playContent])
 
   const updateVolume = useCallback((v: number) => {
     setVolume(v)
@@ -294,6 +284,10 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
   }, [url])
 
   useEffect(() => {
+    adStateRef.current = adState
+  }, [adState])
+
+  useEffect(() => {
     const el = videoRef.current
     if (!el || !url) { setStatus('loading'); return }
 
@@ -303,7 +297,6 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     setDuration(0)
     setBuffered(0)
     setSpeed(1)
-    setAdState('none')
     setInitialPlayDone(false)
     hasAdShownRef.current = false
 
@@ -325,18 +318,21 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     const onPlay = () => setPlaying(true)
     const onPause = () => setPlaying(false)
     const onTime = () => {
-      if (adState !== 'done') return
+      if (adStateRef.current !== 'done') return
       setCurrentTime(el.currentTime)
       if (progressRef.current && el.duration) progressRef.current(el.currentTime, el.duration)
     }
-    const onDur = () => { if (adState === 'done') setDuration(el.duration || 0) }
+    const onDur = () => { if (adStateRef.current === 'done') setDuration(el.duration || 0) }
     const onEnd = () => {
-      if (adState !== 'done') return
+      if (adStateRef.current !== 'done') {
+        switchToContent()
+        return
+      }
       setPlaying(false)
       endedRef.current?.()
     }
     const onErr = () => {
-      if (adState !== 'done' && adState !== 'none') {
+      if (hasAdShownRef.current && adStateRef.current !== 'none' && adStateRef.current !== 'done') {
         switchToContent()
         return
       }
@@ -354,8 +350,8 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     el.addEventListener('pause', onPause)
     el.addEventListener('timeupdate', onTime)
     el.addEventListener('durationchange', onDur)
-    el.addEventListener('ended', onEnd, { once: true })
-    el.addEventListener('error', onErr, { once: true })
+    el.addEventListener('ended', onEnd)
+    el.addEventListener('error', onErr)
     el.addEventListener('volumechange', onVol)
     el.addEventListener('progress', onProgress)
 
@@ -363,9 +359,8 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
       el.pause()
       el.removeAttribute('src')
       el.load()
-      setInitialPlayDone(false)
     }
-  }, [url, autoPlay, showControlsTemp, adState, fetchAndPlayAd, switchToContent])
+  }, [url, autoPlay, showControlsTemp, fetchAndPlayAd, switchToContent])
 
   useEffect(() => {
     const onFS = () => setIsFullscreen(!!document.fullscreenElement)

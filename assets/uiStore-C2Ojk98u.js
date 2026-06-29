@@ -1,0 +1,1 @@
+import{t as e}from"./react-D0umGxIo.js";var t=e(e=>({activeTab:`home`,isDark:!1,pageTitle:``,activePartyTab:`chat`,storeCategory:`all`,setActiveTab:t=>e({activeTab:t}),toggleTheme:()=>e(e=>({isDark:!e.isDark})),setPageTitle:t=>e({pageTitle:t}),setActivePartyTab:t=>e({activePartyTab:t}),setStoreCategory:t=>e({storeCategory:t})}));export{t};

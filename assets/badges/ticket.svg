@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="ticket-grad" x1="10" y1="30" x2="110" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#FF8A5B"/>
+    </linearGradient>
+    <filter id="ticket-glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Ticket body -->
+  <rect x="10" y="35" width="100" height="50" rx="6" fill="url(#ticket-grad)" filter="url(#ticket-glow)"/>
+  <!-- Perforated line -->
+  <line x1="82" y1="35" x2="82" y2="85" stroke="#0A0A0F" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>
+  <!-- Stub section -->
+  <rect x="84" y="35" width="26" height="50" rx="0 6 6 0" fill="#E85D2E"/>
+  <!-- Text lines -->
+  <rect x="18" y="45" width="40" height="4" rx="2" fill="white" opacity="0.9"/>
+  <rect x="18" y="54" width="55" height="3" rx="1.5" fill="white" opacity="0.6"/>
+  <rect x="18" y="62" width="30" height="3" rx="1.5" fill="white" opacity="0.4"/>
+  <!-- Star on stub -->
+  <polygon points="97,52 99.5,57 105,58 101,62 102,67 97,64.5 92,67 93,62 89,58 94.5,57" fill="#FFD700" opacity="0.9"/>
+</svg>

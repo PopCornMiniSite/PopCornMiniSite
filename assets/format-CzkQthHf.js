@@ -1,0 +1,1 @@
+function e(e){let t=Math.floor(e/60),n=e%60;return t===0?`${n}m`:`${t}h ${n}m`}function t(e,t=`ar-EG`){return new Date(e).toLocaleDateString(t,{year:`numeric`,month:`long`,day:`numeric`})}function n(e){return e.toFixed(1)}export{e as n,n as r,t};

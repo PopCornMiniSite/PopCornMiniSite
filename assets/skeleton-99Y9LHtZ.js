@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-BseJUIpC.js";import{tt as t}from"./index-sCkEx0no.js";var n=e();function r({className:e,...r}){return(0,n.jsx)(`div`,{className:t(`animate-pulse rounded-md bg-[var(--tg-hint-color)]/20`,e),...r})}export{r as t};

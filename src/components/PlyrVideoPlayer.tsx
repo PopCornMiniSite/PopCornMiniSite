@@ -13,7 +13,41 @@ interface PlyrVideoPlayerProps {
 const VAST_PROXY = `${(import.meta as any).env?.VITE_API_URL || ''}/api/v1/stream/vast`
 const FALLBACK_VAST = 'https://www.radiantmediaplayer.com/vast/tags/inline-linear.xml'
 const AD_SKIP_DELAY = 5
-const AD_LOAD_TIMEOUT = 15000
+const AD_LOAD_TIMEOUT = 8000
+const PLAY_CALL_TIMEOUT = 4000
+
+const isTelegramWebApp = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user
+
+/**
+ * Wraps el.play() with a hard timeout so it never hangs forever.
+ * In Telegram WebView (and some mobile browsers) the play() Promise can stay
+ * pending indefinitely when autoplay is blocked.
+ *
+ * Strategy:
+ * 1. Try normal play()
+ * 2. If rejected/timed-out, try muted play() (allowed by autoplay policy)
+ * 3. If that also fails, reject so the caller can fall through to content
+ */
+async function safePlay(el: HTMLVideoElement, timeoutMs = PLAY_CALL_TIMEOUT): Promise<void> {
+  const attempt = (muted: boolean) =>
+    new Promise<void>((resolve, reject) => {
+      const prev = el.muted
+      if (muted) el.muted = true
+      const timer = setTimeout(() => {
+        el.muted = prev
+        reject(new Error('play timeout'))
+      }, timeoutMs)
+      el.play()
+        .then(() => { clearTimeout(timer); resolve() })
+        .catch((e) => { clearTimeout(timer); el.muted = prev; reject(e) })
+    })
+
+  try {
+    await attempt(false)
+  } catch {
+    await attempt(true)
+  }
+}
 
 export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded }: PlyrVideoPlayerProps) {
   const playerCtx = usePlayer()
@@ -76,15 +110,20 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     if (!el || !contentUrlRef.current) { switchingRef.current = false; return }
     adUrlRef.current = null
     clearInterval(adTimerRef.current)
+    clearTimeout(adLoadTimerRef.current)
     setAdState('done')
-    el.src = contentUrlRef.current
-    el.play().then(() => {
-      setPlaying(true)
-      setInitialPlayDone(true)
-      switchingRef.current = false
-    }).catch(() => { switchingRef.current = false })
     setDuration(0)
     setCurrentTime(0)
+    el.src = contentUrlRef.current
+    el.load()
+    const onCanPlay = () => {
+      safePlay(el)
+        .then(() => { setPlaying(true); setInitialPlayDone(true) })
+        .catch(() => {})
+        .finally(() => { switchingRef.current = false })
+    }
+    el.addEventListener('canplay', onCanPlay, { once: true })
+    el.addEventListener('error', () => { switchingRef.current = false }, { once: true })
   }, [])
 
   const skipAd = useCallback(() => {
@@ -109,11 +148,17 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     const el = videoRef.current
     if (!el || !contentUrlRef.current) return
     el.src = contentUrlRef.current
-    el.play().then(() => { setPlaying(true); setInitialPlayDone(true) }).catch(() => {})
+    el.load()
+    const onCanPlay = () => {
+      safePlay(el)
+        .then(() => { setPlaying(true); setInitialPlayDone(true) })
+        .catch(() => {})
+    }
+    el.addEventListener('canplay', onCanPlay, { once: true })
   }, [])
 
   const fetchAndPlayAd = useCallback(async () => {
-    if (!VAST_PROXY || hasAdShownRef.current || !contentUrlRef.current) {
+    if (!VAST_PROXY || hasAdShownRef.current || !contentUrlRef.current || isTelegramWebApp) {
       hasAdShownRef.current = true
       playContent()
       return
@@ -123,11 +168,10 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
     setStatus('loading')
 
     const client = new VASTClient()
-    const timeout = setTimeout(() => {
+    adLoadTimerRef.current = setTimeout(() => {
       setAdState('error')
       switchToContent()
     }, AD_LOAD_TIMEOUT)
-    adLoadTimerRef.current = timeout
 
     const tryVast = async (vastUrl: string): Promise<boolean> => {
       try {
@@ -141,7 +185,25 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
           if (el) {
             el.src = mediaFile.fileURL
             el.load()
-            await el.play()
+            await new Promise<void>((resolve, reject) => {
+              const onReady = () => {
+                el.removeEventListener('error', onErr)
+                safePlay(el)
+                  .then(resolve)
+                  .catch(reject)
+              }
+              const onErr = () => {
+                el.removeEventListener('canplay', onReady)
+                reject(new Error('ad load error'))
+              }
+              el.addEventListener('canplay', onReady, { once: true })
+              el.addEventListener('error', onErr, { once: true })
+              setTimeout(() => {
+                el.removeEventListener('canplay', onReady)
+                el.removeEventListener('error', onErr)
+                reject(new Error('ad canplay timeout'))
+              }, 5000)
+            })
             setAdState('playing')
             startAdTimer()
             return true
@@ -153,17 +215,12 @@ export function PlyrVideoPlayer({ url, title = '', autoPlay, onProgress, onEnded
 
     const ok = await tryVast(VAST_PROXY)
     if (!ok) {
-      clearTimeout(timeout)
       const ok2 = await tryVast(FALLBACK_VAST)
       if (!ok2) {
-        clearTimeout(timeout)
+        clearTimeout(adLoadTimerRef.current)
         setAdState('done')
         playContent()
-      } else {
-        clearTimeout(timeout)
       }
-    } else {
-      clearTimeout(timeout)
     }
   }, [startAdTimer, switchToContent, playContent])
 

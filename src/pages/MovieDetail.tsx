@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
-import { useMovie, useMovieCredits, useSimilarMovies, useStreamUrl, useCreateParty, useReportProgress } from '@/lib/api'
+import { useMovie, useMovieCredits, useSimilarMovies, useStreamUrl, useCreateParty } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
+import { useProgressReport } from '@/hooks/useProgressReport'
 import { MovieCard } from '@/components/MovieCard'
 import { ProgressBar } from '@/components/ProgressBar'
 import { CommentsSection } from '@/components/CommentsSection'
@@ -49,10 +50,11 @@ export default function MovieDetail() {
   const playerRef = useRef<HTMLDivElement>(null)
 
   const { data: stream, isLoading: streamLoading, error: streamError } = useStreamUrl('movie', movieId)
-  const reportProgress = useReportProgress()
-  const lastPositionRef = useRef(0)
-  const lastDurationRef = useRef(0)
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { handleProgress, lastPositionRef, lastDurationRef, reportProgress } = useProgressReport({
+    contentType: 'movie',
+    contentId: movieId,
+    enabled: showPlayer,
+  })
 
   useEffect(() => {
     if (movie) {
@@ -62,55 +64,10 @@ export default function MovieDetail() {
   }, [movie, setPageTitle])
 
   useEffect(() => {
-    if (!showPlayer) return
-    progressIntervalRef.current = setInterval(() => {
-      if (lastPositionRef.current > 0 && lastDurationRef.current > 0) {
-        reportProgress.mutate({
-          content_type: 'movie',
-          content_id: movieId,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-    }, 30000)
-    return () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
-    }
-  }, [showPlayer, movieId, reportProgress])
-
-  useEffect(() => {
-    return () => {
-      if (lastPositionRef.current > 0) {
-        reportProgress.mutate({
-          content_type: 'movie',
-          content_id: movieId,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-      const saved = JSON.parse(localStorage.getItem('continue_watching') ?? '[]') as Array<{
-        id: number; type: string; position: number; duration: number
-      }>
-      const existing = saved.findIndex((s) => s.id === movieId && s.type === 'movie')
-      const entry = { id: movieId, type: 'movie', position: lastPositionRef.current, duration: lastDurationRef.current }
-      if (existing >= 0) saved[existing] = entry
-      else saved.push(entry)
-      localStorage.setItem('continue_watching', JSON.stringify(saved))
-    }
-  }, [movieId, reportProgress])
-
-  useEffect(() => {
     if (showPlayer && playerRef.current) {
       playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [showPlayer])
-
-  const handleProgress = useCallback((position: number, duration: number) => {
-    lastPositionRef.current = position
-    lastDurationRef.current = duration
-  }, [])
 
   const handleEnded = useCallback(() => {
     reportProgress.mutate({
@@ -120,7 +77,7 @@ export default function MovieDetail() {
       duration: lastDurationRef.current,
       completed: true,
     })
-  }, [movieId, reportProgress])
+  }, [movieId, reportProgress, lastPositionRef, lastDurationRef])
 
   if (isLoading) {
     return (

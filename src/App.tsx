@@ -8,7 +8,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { SuspenseWrapper } from '@/components/layout/SuspenseWrapper'
 import { lazyLoad } from '@/lib/lazyLoad'
 import { useInitAuth } from '@/lib/api'
-import { PlayerProvider, usePlayer } from '@/contexts/PlayerContext'
+import { useFloatingStore } from '@/stores/floatingPlayerStore'
 import { FloatingPlayer } from '@/components/FloatingPlayer'
 import { Toaster } from 'sonner'
 import './i18n/i18n'
@@ -67,7 +67,9 @@ function AuthInit() {
 
 function FloatingPlayerWrapper() {
   const loc = useLocation()
-  const { showFloating } = usePlayer()
+  const url = useFloatingStore((s) => s.url)
+  const hidden = useFloatingStore((s) => s.hidden)
+  const showFloating = url !== null && !hidden
   const isDetail = loc.pathname.startsWith('/movie/') || loc.pathname.startsWith('/series/') || loc.pathname.startsWith('/season/')
   if (showFloating && !isDetail) {
     return <FloatingPlayer />
@@ -79,15 +81,16 @@ function TelegramBackButton() {
   const loc = useLocation()
   const goBack = useCallback(() => window.history.back(), [])
   useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp
-    if (!tg?.BackButton) return
+    const tg = window.Telegram?.WebApp
+    const backBtn = tg?.BackButton
+    if (!backBtn) return
     if (loc.pathname !== '/') {
-      tg.BackButton.show()
-      tg.BackButton.onClick(goBack)
+      backBtn.show()
+      backBtn.onClick(goBack)
     } else {
-      tg.BackButton.hide()
+      backBtn.hide()
     }
-    return () => { tg.BackButton?.offClick(goBack) }
+    return () => { backBtn?.offClick(goBack) }
   }, [loc.pathname, goBack])
   return null
 }
@@ -98,7 +101,6 @@ export default function App() {
       <TelegramProvider>
         <ThemeProvider>
           <I18nProvider>
-            <PlayerProvider>
               <BrowserRouter basename="/PopCornMiniSite">
                 <AuthInit />
                 <Routes>
@@ -350,7 +352,6 @@ export default function App() {
                 },
               }}
             />
-          </PlayerProvider>
           </I18nProvider>
         </ThemeProvider>
       </TelegramProvider>

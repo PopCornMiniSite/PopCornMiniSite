@@ -38,6 +38,13 @@ interface TelegramWebAppUser {
   is_premium?: boolean
 }
 
+interface TelegramBackButton {
+  show(): void
+  hide(): void
+  onClick(cb: () => void): void
+  offClick(cb: () => void): void
+}
+
 interface TelegramWebApp {
   initData: string
   initDataUnsafe: {
@@ -53,6 +60,7 @@ interface TelegramWebApp {
   close(): void
   shareMessage?(msgId: string, text?: string): void
   openInvoice?(url: string, callback?: (status: string) => void): void
+  BackButton: TelegramBackButton
   hapticFeedback: {
     impactOccurred: (style: string) => void
     notificationOccurred: (type: string) => void

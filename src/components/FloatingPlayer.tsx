@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react'
-import { usePlayer } from '@/contexts/PlayerContext'
+import { useFloatingStore } from '@/stores/floatingPlayerStore'
 
 const MIN_W = 180
 const MIN_H = 100
@@ -7,21 +7,27 @@ const MAX_W = 400
 const MAX_H = 260
 
 export function FloatingPlayer() {
-  const {
-    url, title, playing, hidden,
-    closePlayer, hidePlayer, showPlayer, setPlaying, seekTo,
-    currentTime, duration, setVideoRef, getVideoEl,
-  } = usePlayer()
+  const url = useFloatingStore((s) => s.url)
+  const title = useFloatingStore((s) => s.title)
+  const playing = useFloatingStore((s) => s.playing)
+  const hidden = useFloatingStore((s) => s.hidden)
+  const currentTime = useFloatingStore((s) => s.currentTime)
+  const duration = useFloatingStore((s) => s.duration)
+  const closePlayer = useFloatingStore((s) => s.closePlayer)
+  const hidePlayer = useFloatingStore((s) => s.hidePlayer)
+  const showPlayer = useFloatingStore((s) => s.showPlayer)
+  const setPlaying = useFloatingStore((s) => s.setPlaying)
+  const seekTo = useFloatingStore((s) => s.seekTo)
+  const setVideoRef = useFloatingStore((s) => s.setVideoRef)
 
   const elRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ ox: number; oy: number; l: number; t: number }>({ ox: 0, oy: 0, l: 0, t: 0 })
+  const dragRef = useRef<{ ox: number; oy: number }>({ ox: 0, oy: 0 })
   const resizeRef = useRef<{ ox: number; oy: number; w: number; h: number }>({ ox: 0, oy: 0, w: 0, h: 0 })
+  const rafRef = useRef<number>(0)
 
   const [pos, setPos] = useState({ x: 16, y: 80 })
   const [size, setSize] = useState({ w: 240, h: 150 })
   const [isResizing, setIsResizing] = useState(false)
-
-  const videoEl = getVideoEl()
 
   const fmt = (s: number) => {
     if (!isFinite(s) || s < 0) return '0:00'
@@ -33,7 +39,7 @@ export function FloatingPlayer() {
   }
 
   const togglePlay = useCallback(() => {
-    const el = videoEl
+    const el = useFloatingStore.getState().videoRef
     if (!el) return
     if (el.paused) {
       el.play().then(() => setPlaying(true)).catch(() => {})
@@ -41,13 +47,13 @@ export function FloatingPlayer() {
       el.pause()
       setPlaying(false)
     }
-  }, [videoEl, setPlaying])
+  }, [setPlaying])
 
   const skip = useCallback((sec: number) => {
-    const el = videoEl
+    const el = useFloatingStore.getState().videoRef
     if (!el) return
     el.currentTime = Math.max(0, Math.min(el.currentTime + sec, el.duration || 0))
-  }, [videoEl])
+  }, [])
 
   const onDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const el = elRef.current
@@ -55,13 +61,32 @@ export function FloatingPlayer() {
     const src = 'touches' in e ? e.touches[0] : e
     if (!src) return
     const rect = el.getBoundingClientRect()
-    dragRef.current = { ox: src.clientX - rect.left, oy: src.clientY - rect.top, l: rect.left, t: rect.top }
+    dragRef.current = { ox: src.clientX - rect.left, oy: src.clientY - rect.top }
+
     const onMove = (ev: MouseEvent | TouchEvent) => {
-      const c = 'touches' in ev ? ev.touches[0] : ev
-      if (!c) return
-      setPos({ x: Math.max(0, c.clientX - dragRef.current.ox), y: Math.max(0, c.clientY - dragRef.current.oy) })
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(() => {
+        const c = 'touches' in ev ? ev.touches[0] : ev
+        if (!c || !el) return
+        const x = Math.max(0, c.clientX - dragRef.current.ox)
+        const y = Math.max(0, c.clientY - dragRef.current.oy)
+        el.style.transform = `translate(${x}px, ${y}px)`
+        el.style.left = '0px'
+        el.style.top = '0px'
+      })
     }
-    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp) }
+    const onUp = () => {
+      cancelAnimationFrame(rafRef.current)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onUp)
+      const r = el.getBoundingClientRect()
+      setPos({ x: r.left, y: r.top })
+      el.style.transform = ''
+      el.style.left = `${r.left}px`
+      el.style.top = `${r.top}px`
+    }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
     document.addEventListener('touchmove', onMove, { passive: true })

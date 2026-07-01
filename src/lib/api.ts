@@ -141,8 +141,6 @@ export function useMovies(params: { sort_by?: string; per_page?: number; page?: 
       page: res.meta.page,
       has_more: res.meta.page * per_page < res.meta.total,
     }),
-    staleTime: 60_000,
-    refetchOnMount: 'always',
   })
 }
 

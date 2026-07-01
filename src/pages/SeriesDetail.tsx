@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
-import { useSeries, useSimilarSeries, useStreamUrl, useCreateParty, useReportProgress } from '@/lib/api'
+import { useSeries, useSimilarSeries, useStreamUrl, useCreateParty } from '@/lib/api'
 import { useUiStore } from '@/stores/uiStore'
 import { useDirectionalAnimation } from '@/hooks/useDirectionalAnimation'
+import { useProgressReport } from '@/hooks/useProgressReport'
 import { MovieCard } from '@/components/MovieCard'
 import { ProgressBar } from '@/components/ProgressBar'
 import { CommentsSection } from '@/components/CommentsSection'
@@ -52,10 +53,13 @@ export default function SeriesDetail() {
   const playerRef = useRef<HTMLDivElement>(null)
 
   const { data: stream, isLoading: streamLoading, error: streamError } = useStreamUrl('episode', seriesId, 1, 1)
-  const reportProgress = useReportProgress()
-  const lastPositionRef = useRef(0)
-  const lastDurationRef = useRef(0)
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { handleProgress, lastPositionRef, lastDurationRef, reportProgress } = useProgressReport({
+    contentType: 'episode',
+    contentId: seriesId,
+    season: 1,
+    episode: 1,
+    enabled: showPlayer,
+  })
 
   useEffect(() => {
     if (series) {
@@ -65,59 +69,10 @@ export default function SeriesDetail() {
   }, [series, setPageTitle])
 
   useEffect(() => {
-    if (!showPlayer) return
-    progressIntervalRef.current = setInterval(() => {
-      if (lastPositionRef.current > 0 && lastDurationRef.current > 0) {
-        reportProgress.mutate({
-          content_type: 'episode',
-          content_id: seriesId,
-          season: 1,
-          episode: 1,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-    }, 30000)
-    return () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
-    }
-  }, [showPlayer, seriesId, reportProgress])
-
-  useEffect(() => {
-    return () => {
-      if (lastPositionRef.current > 0) {
-        reportProgress.mutate({
-          content_type: 'episode',
-          content_id: seriesId,
-          season: 1,
-          episode: 1,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-      const saved = JSON.parse(localStorage.getItem('continue_watching') ?? '[]') as Array<{
-        id: number; type: string; position: number; duration: number
-      }>
-      const existing = saved.findIndex((s) => s.id === seriesId && s.type === 'episode')
-      const entry = { id: seriesId, type: 'episode', position: lastPositionRef.current, duration: lastDurationRef.current }
-      if (existing >= 0) saved[existing] = entry
-      else saved.push(entry)
-      localStorage.setItem('continue_watching', JSON.stringify(saved))
-    }
-  }, [seriesId, reportProgress])
-
-  useEffect(() => {
     if (showPlayer && playerRef.current) {
       playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [showPlayer])
-
-  const handleProgress = useCallback((position: number, duration: number) => {
-    lastPositionRef.current = position
-    lastDurationRef.current = duration
-  }, [])
 
   const handleEnded = useCallback(() => {
     reportProgress.mutate({
@@ -129,7 +84,7 @@ export default function SeriesDetail() {
       duration: lastDurationRef.current,
       completed: true,
     })
-  }, [seriesId, reportProgress])
+  }, [seriesId, reportProgress, lastPositionRef, lastDurationRef])
 
   if (isLoading) {
     return (

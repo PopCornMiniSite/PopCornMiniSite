@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useStreamUrl, useReportProgress, useMovie } from '@/lib/api'
+import { useStreamUrl, useMovie, useReportProgress } from '@/lib/api'
 import { usePlayerStore } from '@/stores/playerStore'
+import { useProgressReport } from '@/hooks/useProgressReport'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChevronLeft } from 'lucide-react'
@@ -26,13 +27,14 @@ export default function WatchPage() {
   )
 
   const { data: movie } = useMovie(contentId)
-  const reportProgress = useReportProgress()
-
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastPositionRef = useRef(0)
-  const lastDurationRef = useRef(0)
 
   const { setStreamUrl, seek } = usePlayerStore()
+  const { handleProgress: reportProgressHandler, lastPositionRef, lastDurationRef } = useProgressReport({
+    contentType,
+    contentId,
+    season,
+    episode,
+  })
 
   useEffect(() => {
     if (stream?.url) {
@@ -45,67 +47,13 @@ export default function WatchPage() {
 
   const handleProgress = useCallback(
     (position: number, duration: number) => {
-      lastPositionRef.current = position
-      lastDurationRef.current = duration
+      reportProgressHandler(position, duration)
       seek(position)
     },
-    [seek],
+    [seek, reportProgressHandler],
   )
 
-  useEffect(() => {
-    progressIntervalRef.current = setInterval(() => {
-      if (lastPositionRef.current > 0 && lastDurationRef.current > 0) {
-        reportProgress.mutate({
-          content_type: contentType,
-          content_id: contentId,
-          season,
-          episode,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-    }, 30000)
-
-    return () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
-    }
-  }, [contentType, contentId, season, episode, reportProgress])
-
-  useEffect(() => {
-    return () => {
-      if (lastPositionRef.current > 0) {
-        reportProgress.mutate({
-          content_type: contentType,
-          content_id: contentId,
-          season,
-          episode,
-          position: lastPositionRef.current,
-          duration: lastDurationRef.current,
-          completed: false,
-        })
-      }
-      const saved = JSON.parse(localStorage.getItem('continue_watching') ?? '[]') as Array<{
-        id: number
-        type: string
-        position: number
-        duration: number
-      }>
-      const existing = saved.findIndex((s) => s.id === contentId && s.type === contentType)
-      const entry = {
-        id: contentId,
-        type: contentType,
-        position: lastPositionRef.current,
-        duration: lastDurationRef.current,
-      }
-      if (existing >= 0) {
-        saved[existing] = entry
-      } else {
-        saved.push(entry)
-      }
-      localStorage.setItem('continue_watching', JSON.stringify(saved))
-    }
-  }, [contentType, contentId, season, episode, reportProgress])
+  const reportProgress = useReportProgress()
 
   const handleEnded = useCallback(() => {
     reportProgress.mutate({
@@ -122,7 +70,7 @@ export default function WatchPage() {
     } else {
       navigate(-1)
     }
-  }, [contentType, contentId, season, episode, reportProgress, navigate])
+  }, [contentType, contentId, season, episode, reportProgress, navigate, lastPositionRef, lastDurationRef])
 
   const handleBack = useCallback(() => {
     if (contentType === 'movie') {

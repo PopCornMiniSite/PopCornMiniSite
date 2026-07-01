@@ -12,7 +12,9 @@ export interface CreateInvoiceResponse {
   data: {
     invoice_link: string
     payload: string
-    product: Product
+    amount?: number
+    currency?: string
+    product?: Product
   }
 }
 

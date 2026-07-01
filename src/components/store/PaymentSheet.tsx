@@ -41,7 +41,7 @@ export function PaymentSheet({ product, open, onClose, onSuccess }: PaymentSheet
 
   const handlePay = async () => {
     setStatus('processing')
-    const idempotencyKey = `${product.id}-${Date.now()}-${Math.random().toString(36).substring(2)}`
+    const idempotencyKey = `${product.id}-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10)}`
 
     try {
       const result = await hybridPurchase.mutateAsync({
@@ -50,8 +50,10 @@ export function PaymentSheet({ product, open, onClose, onSuccess }: PaymentSheet
         idempotency_key: idempotencyKey,
       })
 
-      if (effectiveCurrency === 'stars' && result.data.invoice_link && window.Telegram?.WebApp?.openInvoice) {
-        window.Telegram.WebApp.openInvoice(result.data.invoice_link, (invoiceStatus: string) => {
+      const invoiceLink = result.data.invoice_link
+
+      if (effectiveCurrency === 'stars' && invoiceLink && typeof window !== 'undefined' && window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(invoiceLink, (invoiceStatus: string) => {
           if (invoiceStatus === 'paid') {
             setStatus('success')
             toast.success(t('purchase_success'))
@@ -61,6 +63,9 @@ export function PaymentSheet({ product, open, onClose, onSuccess }: PaymentSheet
             setStatus('idle')
           }
         })
+      } else if (effectiveCurrency === 'stars' && invoiceLink) {
+        window.open(invoiceLink, '_blank')
+        setStatus('idle')
       } else {
         setStatus('success')
         toast.success(t('purchase_success'))

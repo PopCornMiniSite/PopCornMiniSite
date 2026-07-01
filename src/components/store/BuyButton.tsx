@@ -31,9 +31,11 @@ export function BuyButton({ product, variant = 'primary', size = 'md', className
             onSuccess?.()
           }
         })
+      } else if (result.data.invoice_link) {
+        window.open(result.data.invoice_link, '_blank')
+      } else {
+        onSuccess?.()
       }
-
-      onSuccess?.()
     } catch {
       // Error handled by mutation
     }
